@@ -1,0 +1,2 @@
+# bidcraft
+Handicraft Auction Platform
