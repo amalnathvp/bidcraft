@@ -20,7 +20,7 @@ const Navbar: React.FC<NavbarProps> = ({
 
   const navItems = [
     { href: '#home', label: 'Home', page: 'home' },
-    { href: '#auctions', label: 'All Auctions', page: 'auctions' },
+    { href: '#auctions', label: 'Live Auctions', page: 'live-auctions' },
     { href: '#sellers', label: 'Sell', page: 'sellers' },
     { href: '#categories', label: 'Categories', page: 'home' },
     { href: '#about', label: 'About', page: 'home' },
@@ -101,10 +101,13 @@ const Navbar: React.FC<NavbarProps> = ({
               </button>
               {isUserMenuOpen && (
                 <div className="user-dropdown">
-                  <a href="#" className="dropdown-item">
-                    <i className="fas fa-user"></i>
-                    Profile
-                  </a>
+                  <button 
+                    onClick={() => handleAuthNavigation('buyer-dashboard')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-tachometer-alt"></i>
+                    My Dashboard
+                  </button>
                   {(user.accountType === 'seller' || user.accountType === 'both') && (
                     <button 
                       onClick={() => handleAuthNavigation('seller-dashboard')} 
@@ -114,13 +117,20 @@ const Navbar: React.FC<NavbarProps> = ({
                       Seller Dashboard
                     </button>
                   )}
-                  <a href="#" className="dropdown-item">
+                  <button 
+                    onClick={() => handleAuthNavigation('live-auctions')} 
+                    className="dropdown-item"
+                  >
                     <i className="fas fa-gavel"></i>
-                    My Bids
-                  </a>
+                    Live Auctions
+                  </button>
                   <a href="#" className="dropdown-item">
                     <i className="fas fa-heart"></i>
-                    Watchlist
+                    My Watchlist
+                  </a>
+                  <a href="#" className="dropdown-item">
+                    <i className="fas fa-shopping-bag"></i>
+                    My Purchases
                   </a>
                   <a href="#" className="dropdown-item">
                     <i className="fas fa-cog"></i>

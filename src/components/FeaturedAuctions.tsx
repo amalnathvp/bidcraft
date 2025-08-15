@@ -90,7 +90,7 @@ const FeaturedAuctions: React.FC<FeaturedAuctionsProps> = ({ onBidPlaced, onView
             className="btn-outline"
             onClick={onViewAllAuctions}
           >
-            View All Auctions
+            View All Live Auctions
           </button>
         </div>
       </div>

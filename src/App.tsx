@@ -13,6 +13,9 @@ import LoginPage from './components/LoginPage';
 import SignupPage from './components/SignupPage';
 import SellerPage from './components/SellerPage';
 import SellerDashboard from './components/SellerDashboard';
+import BuyerDashboard from './components/BuyerDashboard';
+import LiveAuctions from './components/LiveAuctions';
+import AuctionDetail from './components/AuctionDetail';
 import { useNotifications } from './hooks';
 import './App.css';
 
@@ -20,9 +23,11 @@ const App: React.FC = () => {
   const { notifications, addNotification, removeNotification } = useNotifications();
   const [currentPage, setCurrentPage] = useState<string>('home');
   const [user, setUser] = useState<any>(null);
+  const [navigationData, setNavigationData] = useState<any>(null);
 
-  const handleNavigation = (page: string) => {
+  const handleNavigation = (page: string, data?: any) => {
     setCurrentPage(page);
+    setNavigationData(data);
   };
 
   const handleLogin = (userData: any) => {
@@ -45,6 +50,25 @@ const App: React.FC = () => {
     switch (currentPage) {
       case 'auctions':
         return <AuctionsPage />;
+      case 'live-auctions':
+        return <LiveAuctions onNavigate={handleNavigation} />;
+      case 'auction-detail':
+        return (
+          <AuctionDetail 
+            auctionId={navigationData?.auctionId || '1'}
+            onNavigate={handleNavigation}
+            onBack={() => handleNavigation('live-auctions')}
+          />
+        );
+      case 'buyer-dashboard':
+        // Allow access to buyer dashboard even without login (demo mode)
+        const demoBuyer = user || {
+          name: 'Demo Buyer',
+          email: 'buyer@bidcraft.com',
+          accountType: 'buyer',
+          isAuthenticated: false
+        };
+        return <BuyerDashboard onNavigate={handleNavigation} user={demoBuyer} />;
       case 'login':
         return <LoginPage onNavigate={handleNavigation} onLogin={handleLogin} />;
       case 'signup':
@@ -69,7 +93,7 @@ const App: React.FC = () => {
               onBidPlaced={(amount: number) => 
                 addNotification(`Your bid of $${amount} has been placed successfully!`, 'success')
               }
-              onViewAllAuctions={() => setCurrentPage('auctions')}
+              onViewAllAuctions={() => setCurrentPage('live-auctions')}
             />
             <Categories />
             <HowItWorks />
