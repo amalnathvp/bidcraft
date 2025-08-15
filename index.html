@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidCraft - Authentic Handicraft Auction Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <h1>BidCraft</h1>
+                <span class="tagline">Authentic Handicrafts</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#auctions" class="nav-link">Live Auctions</a></li>
+                <li><a href="#categories" class="nav-link">Categories</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="nav-buttons">
+                <button class="btn-secondary">Login</button>
+                <button class="btn-primary">Sign Up</button>
+            </div>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">Discover Authentic <span class="highlight">Handicrafts</span></h1>
+                <p class="hero-description">
+                    Join the premier auction platform for authentic handcrafted treasures. 
+                    Bid on unique pieces created by skilled artisans from around the world.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-primary large">Start Bidding</button>
+                    <button class="btn-outline large">Explore Auctions</button>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">10,000+</span>
+                        <span class="stat-label">Unique Items</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">5,000+</span>
+                        <span class="stat-label">Happy Bidders</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Artisans</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="hero-card">
+                    <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center" alt="Handcrafted pottery">
+                    <div class="card-overlay">
+                        <span class="live-indicator">LIVE AUCTION</span>
+                        <h3>Artisan Pottery Collection</h3>
+                        <p class="current-bid">Current Bid: $150</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Auctions -->
+    <section id="auctions" class="featured-auctions">
+        <div class="container">
+            <div class="section-header">
+                <h2>Live Auctions</h2>
+                <p>Don't miss out on these exceptional pieces</p>
+            </div>
+            <div class="auctions-grid">
+                <div class="auction-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop" alt="Handcrafted ceramics">
+                        <div class="time-remaining">2h 45m left</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Vintage Ceramic Vase</h3>
+                        <p class="artisan">by Maria Santos</p>
+                        <div class="bid-info">
+                            <span class="current-bid">$125</span>
+                            <span class="bid-count">12 bids</span>
+                        </div>
+                        <button class="btn-primary small">Place Bid</button>
+                    </div>
+                </div>
+                
+                <div class="auction-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop" alt="Wooden sculpture">
+                        <div class="time-remaining">5h 12m left</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Carved Wooden Sculpture</h3>
+                        <p class="artisan">by John Craftsman</p>
+                        <div class="bid-info">
+                            <span class="current-bid">$280</span>
+                            <span class="bid-count">8 bids</span>
+                        </div>
+                        <button class="btn-primary small">Place Bid</button>
+                    </div>
+                </div>
+                
+                <div class="auction-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=300&h=200&fit=crop" alt="Handwoven textile">
+                        <div class="time-remaining">1d 3h left</div>
+                    </div>
+                    <div class="card-content">
+                        <h3>Traditional Handwoven Rug</h3>
+                        <p class="artisan">by Amira Hassan</p>
+                        <div class="bid-info">
+                            <span class="current-bid">$450</span>
+                            <span class="bid-count">15 bids</span>
+                        </div>
+                        <button class="btn-primary small">Place Bid</button>
+                    </div>
+                </div>
+            </div>
+            <div class="section-footer">
+                <button class="btn-outline">View All Auctions</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Categories -->
+    <section id="categories" class="categories">
+        <div class="container">
+            <div class="section-header">
+                <h2>Browse by Category</h2>
+                <p>Explore our diverse collection of handicrafts</p>
+            </div>
+            <div class="categories-grid">
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h3>Pottery & Ceramics</h3>
+                    <p>Handcrafted bowls, vases, and decorative pieces</p>
+                    <span class="item-count">450+ items</span>
+                </div>
+                
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-cut"></i>
+                    </div>
+                    <h3>Textiles & Fabrics</h3>
+                    <p>Traditional weaving, embroidery, and tapestries</p>
+                    <span class="item-count">320+ items</span>
+                </div>
+                
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-tree"></i>
+                    </div>
+                    <h3>Wood Crafts</h3>
+                    <p>Carved sculptures, furniture, and decorative items</p>
+                    <span class="item-count">280+ items</span>
+                </div>
+                
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                    <h3>Jewelry & Accessories</h3>
+                    <p>Handmade jewelry and personal accessories</p>
+                    <span class="item-count">190+ items</span>
+                </div>
+                
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-hammer"></i>
+                    </div>
+                    <h3>Metal Works</h3>
+                    <p>Forged items, sculptures, and decorative pieces</p>
+                    <span class="item-count">150+ items</span>
+                </div>
+                
+                <div class="category-card">
+                    <div class="category-icon">
+                        <i class="fas fa-brush"></i>
+                    </div>
+                    <h3>Art & Paintings</h3>
+                    <p>Original artworks and traditional paintings</p>
+                    <span class="item-count">220+ items</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How BidCraft Works</h2>
+                <p>Start your journey with authentic handicrafts in three simple steps</p>
+            </div>
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Browse & Discover</h3>
+                        <p>Explore our curated collection of authentic handicrafts from talented artisans worldwide.</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Place Your Bid</h3>
+                        <p>Join live auctions and place bids on items that catch your eye. Set maximum bids for automatic bidding.</p>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Win & Enjoy</h3>
+                        <p>Win your favorite pieces and have them carefully packaged and shipped directly to your door.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="about">
+        <div class="container">
+            <div class="about-content">
+                <div class="about-text">
+                    <h2>About BidCraft</h2>
+                    <p class="large-text">
+                        BidCraft is the world's premier auction platform dedicated exclusively to authentic handicrafts. 
+                        We connect passionate collectors with skilled artisans, preserving traditional craftsmanship while 
+                        creating a global marketplace for unique, handmade treasures.
+                    </p>
+                    <p>
+                        Every item on our platform is carefully authenticated and comes with a certificate of authenticity. 
+                        We work directly with artisans to ensure fair compensation and support traditional craft communities 
+                        around the world.
+                    </p>
+                    <div class="features">
+                        <div class="feature">
+                            <i class="fas fa-certificate"></i>
+                            <span>Authenticated Items</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-shipping-fast"></i>
+                            <span>Worldwide Shipping</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Secure Transactions</span>
+                        </div>
+                        <div class="feature">
+                            <i class="fas fa-handshake"></i>
+                            <span>Fair Trade Practices</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <img src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=500&h=400&fit=crop" alt="Artisan working">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <h2>Stay Updated</h2>
+                <p>Get notified about new auctions, featured artisans, and exclusive deals</p>
+                <form class="newsletter-form">
+                    <input type="email" placeholder="Enter your email address" required>
+                    <button type="submit" class="btn-primary">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer id="contact" class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <h3>BidCraft</h3>
+                        <p>Authentic Handicrafts</p>
+                    </div>
+                    <p>Connecting artisans with collectors worldwide through authentic handicraft auctions.</p>
+                    <div class="social-links">
+                        <a href="#"><i class="fab fa-facebook"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-pinterest"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#auctions">Live Auctions</a></li>
+                        <li><a href="#categories">Categories</a></li>
+                        <li><a href="#about">About Us</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Bidding Guide</a></li>
+                        <li><a href="#">Shipping Info</a></li>
+                        <li><a href="#">Returns</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Contact</h4>
+                    <div class="contact-info">
+                        <p><i class="fas fa-envelope"></i> support@bidcraft.com</p>
+                        <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
+                        <p><i class="fas fa-map-marker-alt"></i> 123 Craft Street, Art District</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2025 BidCraft. All rights reserved.</p>
+                <div class="footer-links">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                    <a href="#">Cookie Policy</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BidCraft - Authentic Handicraft Auction Platform</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(62, 39, 35, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            opacity: 0;
+            animation: fadeIn 0.3s ease forwards;
+        }
+        
+        .modal-content {
+            background: var(--primary-white);
+            border-radius: var(--border-radius);
+            padding: 0;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-heavy);
+            animation: slideUp 0.3s ease forwards;
+        }
+        
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: var(--dark-brown);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-body h4 {
+            color: var(--dark-brown);
+            margin-bottom: 0.5rem;
+        }
+        
+        .current-bid-modal {
+            color: var(--medium-brown);
+            font-weight: 600;
+            font-family: var(--font-heading);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--dark-brown);
+            font-weight: 500;
+        }
+        
+        .form-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--light-brown);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+        }
+        
+        .form-group input[type="number"]:focus {
+            outline: none;
+            border-color: var(--medium-brown);
+        }
+        
+        .form-group input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        
+        .modal-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        
+        .modal-buttons button {
+            flex: 1;
+        }
+        
+        /* Notification Styles */
+        .notification-container {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 3000;
+        }
+        
+        .notification {
+            background: var(--primary-white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-heavy);
+            max-width: 400px;
+            margin-bottom: 1rem;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification-success {
+            border-left: 4px solid #27ae60;
+        }
+        
+        .notification-error {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .notification-info {
+            border-left: 4px solid var(--medium-brown);
+        }
+        
+        .notification-content {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+        
+        .notification-message {
+            color: var(--text-dark);
+            line-height: 1.4;
+        }
+        
+        .notification-close {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-light);
+            padding: 0;
+            min-width: 20px;
+        }
+        
+        /* Mobile Navigation Styles */
+        @media (max-width: 768px) {
+            .nav-menu {
+                position: fixed;
+                left: -100%;
+                top: 70px;
+                flex-direction: column;
+                background-color: var(--primary-white);
+                width: 100%;
+                text-align: center;
+                transition: 0.3s;
+                box-shadow: var(--shadow-medium);
+                padding: 2rem 0;
+            }
+            
+            .nav-menu.active {
+                left: 0;
+            }
+            
+            .nav-menu li {
+                margin: 1rem 0;
+            }
+            
+            .hamburger.active span:nth-child(2) {
+                opacity: 0;
+            }
+            
+            .hamburger.active span:nth-child(1) {
+                transform: translateY(8px) rotate(45deg);
+            }
+            
+            .hamburger.active span:nth-child(3) {
+                transform: translateY(-8px) rotate(-45deg);
+            }
+        }
+        
+        /* Scroll effect for navbar */
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Animation classes */
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(30px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        /* Active navigation link */
+        .nav-link.active {
+            color: var(--medium-brown);
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <!-- React and ReactDOM from CDN for demonstration -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Our React components -->
+    <script type="text/babel" src="react-src/App.tsx"></script>
+    <script type="text/babel">
+        // Bootstrap the React app
+        const { useState, useEffect } = React;
+        
+        // Hooks implementation
+        const useNotifications = () => {
+            const [notifications, setNotifications] = useState([]);
+            
+            const addNotification = (message, type = 'info', duration = 5000) => {
+                const id = Date.now().toString();
+                const notification = { id, message, type, duration };
+                
+                setNotifications(prev => [...prev, notification]);
+                
+                if (duration > 0) {
+                    setTimeout(() => {
+                        removeNotification(id);
+                    }, duration);
+                }
+            };
+            
+            const removeNotification = (id) => {
+                setNotifications(prev => prev.filter(n => n.id !== id));
+            };
+            
+            return {
+                notifications,
+                addNotification,
+                removeNotification
+            };
+        };
+        
+        const useScrollEffect = () => {
+            const [isScrolled, setIsScrolled] = useState(false);
+            
+            useEffect(() => {
+                const handleScroll = () => {
+                    setIsScrolled(window.scrollY > 100);
+                };
+                
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+            
+            return isScrolled;
+        };
+        
+        // Components
+        const Navbar = () => {
+            const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+            const isScrolled = useScrollEffect();
+            
+            const navItems = [
+                { href: '#home', label: 'Home' },
+                { href: '#auctions', label: 'Live Auctions' },
+                { href: '#categories', label: 'Categories' },
+                { href: '#about', label: 'About' },
+                { href: '#contact', label: 'Contact' },
+            ];
+            
+            const handleScroll = (e, targetId) => {
+                e.preventDefault();
+                const target = document.querySelector(targetId);
+                if (target) {
+                    const offsetTop = target.getBoundingClientRect().top + window.pageYOffset - 80;
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+                setIsMobileMenuOpen(false);
+            };
+            
+            return (
+                <nav className={`navbar ${isScrolled ? 'scrolled' : ''}`}>
+                    <div className="nav-container">
+                        <div className="nav-logo">
+                            <h1>BidCraft</h1>
+                            <span className="tagline">Authentic Handicrafts</span>
+                        </div>
+                        
+                        <ul className={`nav-menu ${isMobileMenuOpen ? 'active' : ''}`}>
+                            {navItems.map((item) => (
+                                <li key={item.href}>
+                                    <a 
+                                        href={item.href} 
+                                        className="nav-link"
+                                        onClick={(e) => handleScroll(e, item.href)}
+                                    >
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                        
+                        <div className="nav-buttons">
+                            <button className="btn-secondary">Login</button>
+                            <button className="btn-primary">Sign Up</button>
+                        </div>
+                        
+                        <div 
+                            className={`hamburger ${isMobileMenuOpen ? 'active' : ''}`}
+                            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                        >
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </nav>
+            );
+        };
+        
+        const Hero = ({ onGetStarted }) => {
+            return (
+                <section id="home" className="hero">
+                    <div className="hero-container">
+                        <div className="hero-content">
+                            <h1 className="hero-title">
+                                Discover Authentic <span className="highlight">Handicrafts</span>
+                            </h1>
+                            <p className="hero-description">
+                                Join the premier auction platform for authentic handcrafted treasures. 
+                                Bid on unique pieces created by skilled artisans from around the world.
+                            </p>
+                            <div className="hero-buttons">
+                                <button className="btn-primary large" onClick={onGetStarted}>
+                                    Start Bidding
+                                </button>
+                                <button className="btn-outline large">
+                                    Explore Auctions
+                                </button>
+                            </div>
+                            <div className="hero-stats">
+                                <div className="stat">
+                                    <span className="stat-number">10,000+</span>
+                                    <span className="stat-label">Unique Items</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-number">5,000+</span>
+                                    <span className="stat-label">Happy Bidders</span>
+                                </div>
+                                <div className="stat">
+                                    <span className="stat-number">500+</span>
+                                    <span className="stat-label">Artisans</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="hero-image">
+                            <div className="hero-card">
+                                <img 
+                                    src="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop&crop=center" 
+                                    alt="Handcrafted pottery"
+                                />
+                                <div className="card-overlay">
+                                    <span className="live-indicator">LIVE AUCTION</span>
+                                    <h3>Artisan Pottery Collection</h3>
+                                    <p className="current-bid">Current Bid: $150</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const BidModal = ({ item, onClose, onSubmit }) => {
+            const [formData, setFormData] = useState({
+                amount: item.currentBid + 1,
+                isMaxBid: false
+            });
+            
+            useEffect(() => {
+                document.body.style.overflow = 'hidden';
+                return () => {
+                    document.body.style.overflow = 'auto';
+                };
+            }, []);
+            
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSubmit(formData.amount);
+            };
+            
+            const handleOverlayClick = (e) => {
+                if (e.target === e.currentTarget) {
+                    onClose();
+                }
+            };
+            
+            return (
+                <div className="modal-overlay" onClick={handleOverlayClick}>
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h3>Place Your Bid</h3>
+                            <button className="modal-close" onClick={onClose}>
+                                &times;
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            <h4>{item.title}</h4>
+                            <p>Current bid: <span className="current-bid-modal">${item.currentBid}</span></p>
+                            <form className="bid-form" onSubmit={handleSubmit}>
+                                <div className="form-group">
+                                    <label htmlFor="bidAmount">Your bid amount:</label>
+                                    <input
+                                        type="number"
+                                        id="bidAmount"
+                                        min={item.currentBid + 1}
+                                        step="1"
+                                        value={formData.amount}
+                                        onChange={(e) => setFormData(prev => ({ 
+                                            ...prev, 
+                                            amount: parseInt(e.target.value) || item.currentBid + 1 
+                                        }))}
+                                        placeholder="Enter your bid"
+                                        required
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.isMaxBid}
+                                            onChange={(e) => setFormData(prev => ({ 
+                                                ...prev, 
+                                                isMaxBid: e.target.checked 
+                                            }))}
+                                        />
+                                        Set as maximum bid (auto-bid up to this amount)
+                                    </label>
+                                </div>
+                                <div className="modal-buttons">
+                                    <button type="button" className="btn-outline modal-cancel" onClick={onClose}>
+                                        Cancel
+                                    </button>
+                                    <button type="submit" className="btn-primary">
+                                        Place Bid
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const FeaturedAuctions = ({ onBidPlaced }) => {
+            const [selectedItem, setSelectedItem] = useState(null);
+            
+            const auctionItems = [
+                {
+                    id: '1',
+                    title: 'Vintage Ceramic Vase',
+                    artisan: 'Maria Santos',
+                    currentBid: 125,
+                    bidCount: 12,
+                    timeRemaining: '2h 45m left',
+                    imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop',
+                    isLive: true
+                },
+                {
+                    id: '2',
+                    title: 'Carved Wooden Sculpture',
+                    artisan: 'John Craftsman',
+                    currentBid: 280,
+                    bidCount: 8,
+                    timeRemaining: '5h 12m left',
+                    imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop',
+                    isLive: true
+                },
+                {
+                    id: '3',
+                    title: 'Traditional Handwoven Rug',
+                    artisan: 'Amira Hassan',
+                    currentBid: 450,
+                    bidCount: 15,
+                    timeRemaining: '1d 3h left',
+                    imageUrl: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=300&h=200&fit=crop',
+                    isLive: true
+                }
+            ];
+            
+            const handleBidClick = (item) => {
+                setSelectedItem(item);
+            };
+            
+            const handleBidSubmit = (amount) => {
+                if (selectedItem) {
+                    onBidPlaced(amount);
+                    setSelectedItem(null);
+                }
+            };
+            
+            return (
+                <section id="auctions" className="featured-auctions">
+                    <div className="container">
+                        <div className="section-header">
+                            <h2>Live Auctions</h2>
+                            <p>Don't miss out on these exceptional pieces</p>
+                        </div>
+                        <div className="auctions-grid">
+                            {auctionItems.map((item) => (
+                                <div key={item.id} className="auction-card">
+                                    <div className="card-image">
+                                        <img src={item.imageUrl} alt={item.title} />
+                                        <div className="time-remaining">{item.timeRemaining}</div>
+                                    </div>
+                                    <div className="card-content">
+                                        <h3>{item.title}</h3>
+                                        <p className="artisan">by {item.artisan}</p>
+                                        <div className="bid-info">
+                                            <span className="current-bid">${item.currentBid}</span>
+                                            <span className="bid-count">{item.bidCount} bids</span>
+                                        </div>
+                                        <button 
+                                            className="btn-primary small"
+                                            onClick={() => handleBidClick(item)}
+                                        >
+                                            Place Bid
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="section-footer">
+                            <button className="btn-outline">View All Auctions</button>
+                        </div>
+                    </div>
+                    
+                    {selectedItem && (
+                        <BidModal
+                            item={selectedItem}
+                            onClose={() => setSelectedItem(null)}
+                            onSubmit={handleBidSubmit}
+                        />
+                    )}
+                </section>
+            );
+        };
+        
+        const Categories = () => {
+            const categories = [
+                {
+                    id: '1',
+                    name: 'Pottery & Ceramics',
+                    description: 'Handcrafted bowls, vases, and decorative pieces',
+                    itemCount: 450,
+                    icon: 'fas fa-palette'
+                },
+                {
+                    id: '2',
+                    name: 'Textiles & Fabrics',
+                    description: 'Traditional weaving, embroidery, and tapestries',
+                    itemCount: 320,
+                    icon: 'fas fa-cut'
+                },
+                {
+                    id: '3',
+                    name: 'Wood Crafts',
+                    description: 'Carved sculptures, furniture, and decorative items',
+                    itemCount: 280,
+                    icon: 'fas fa-tree'
+                },
+                {
+                    id: '4',
+                    name: 'Jewelry & Accessories',
+                    description: 'Handmade jewelry and personal accessories',
+                    itemCount: 190,
+                    icon: 'fas fa-gem'
+                },
+                {
+                    id: '5',
+                    name: 'Metal Works',
+                    description: 'Forged items, sculptures, and decorative pieces',
+                    itemCount: 150,
+                    icon: 'fas fa-hammer'
+                },
+                {
+                    id: '6',
+                    name: 'Art & Paintings',
+                    description: 'Original artworks and traditional paintings',
+                    itemCount: 220,
+                    icon: 'fas fa-brush'
+                }
+            ];
+            
+            return (
+                <section id="categories" className="categories">
+                    <div className="container">
+                        <div className="section-header">
+                            <h2>Browse by Category</h2>
+                            <p>Explore our diverse collection of handicrafts</p>
+                        </div>
+                        <div className="categories-grid">
+                            {categories.map((category) => (
+                                <div key={category.id} className="category-card">
+                                    <div className="category-icon">
+                                        <i className={category.icon}></i>
+                                    </div>
+                                    <h3>{category.name}</h3>
+                                    <p>{category.description}</p>
+                                    <span className="item-count">{category.itemCount}+ items</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const HowItWorks = () => {
+            const steps = [
+                {
+                    number: 1,
+                    title: 'Browse & Discover',
+                    description: 'Explore our curated collection of authentic handicrafts from talented artisans worldwide.'
+                },
+                {
+                    number: 2,
+                    title: 'Place Your Bid',
+                    description: 'Join live auctions and place bids on items that catch your eye. Set maximum bids for automatic bidding.'
+                },
+                {
+                    number: 3,
+                    title: 'Win & Enjoy',
+                    description: 'Win your favorite pieces and have them carefully packaged and shipped directly to your door.'
+                }
+            ];
+            
+            return (
+                <section className="how-it-works">
+                    <div className="container">
+                        <div className="section-header">
+                            <h2>How BidCraft Works</h2>
+                            <p>Start your journey with authentic handicrafts in three simple steps</p>
+                        </div>
+                        <div className="steps-grid">
+                            {steps.map((step) => (
+                                <div key={step.number} className="step">
+                                    <div className="step-number">{step.number}</div>
+                                    <div className="step-content">
+                                        <h3>{step.title}</h3>
+                                        <p>{step.description}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const About = () => {
+            const features = [
+                { icon: 'fas fa-certificate', text: 'Authenticated Items' },
+                { icon: 'fas fa-shipping-fast', text: 'Worldwide Shipping' },
+                { icon: 'fas fa-shield-alt', text: 'Secure Transactions' },
+                { icon: 'fas fa-handshake', text: 'Fair Trade Practices' }
+            ];
+            
+            return (
+                <section id="about" className="about">
+                    <div className="container">
+                        <div className="about-content">
+                            <div className="about-text">
+                                <h2>About BidCraft</h2>
+                                <p className="large-text">
+                                    BidCraft is the world's premier auction platform dedicated exclusively to authentic handicrafts. 
+                                    We connect passionate collectors with skilled artisans, preserving traditional craftsmanship while 
+                                    creating a global marketplace for unique, handmade treasures.
+                                </p>
+                                <p>
+                                    Every item on our platform is carefully authenticated and comes with a certificate of authenticity. 
+                                    We work directly with artisans to ensure fair compensation and support traditional craft communities 
+                                    around the world.
+                                </p>
+                                <div className="features">
+                                    {features.map((feature, index) => (
+                                        <div key={index} className="feature">
+                                            <i className={feature.icon}></i>
+                                            <span>{feature.text}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="about-image">
+                                <img 
+                                    src="https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=500&h=400&fit=crop" 
+                                    alt="Artisan working" 
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const Newsletter = ({ onSubscribe }) => {
+            const [email, setEmail] = useState('');
+            
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (email.trim()) {
+                    onSubscribe();
+                    setEmail('');
+                }
+            };
+            
+            return (
+                <section className="newsletter">
+                    <div className="container">
+                        <div className="newsletter-content">
+                            <h2>Stay Updated</h2>
+                            <p>Get notified about new auctions, featured artisans, and exclusive deals</p>
+                            <form className="newsletter-form" onSubmit={handleSubmit}>
+                                <input
+                                    type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    placeholder="Enter your email address"
+                                    required
+                                />
+                                <button type="submit" className="btn-primary">
+                                    Subscribe
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const Footer = () => {
+            const quickLinks = ['Home', 'Live Auctions', 'Categories', 'About Us'];
+            const supportLinks = ['Help Center', 'Bidding Guide', 'Shipping Info', 'Returns'];
+            const socialLinks = [
+                { icon: 'fab fa-facebook', href: '#' },
+                { icon: 'fab fa-instagram', href: '#' },
+                { icon: 'fab fa-twitter', href: '#' },
+                { icon: 'fab fa-pinterest', href: '#' }
+            ];
+            
+            return (
+                <footer id="contact" className="footer">
+                    <div className="container">
+                        <div className="footer-content">
+                            <div className="footer-section">
+                                <div className="footer-logo">
+                                    <h3>BidCraft</h3>
+                                    <p>Authentic Handicrafts</p>
+                                </div>
+                                <p>Connecting artisans with collectors worldwide through authentic handicraft auctions.</p>
+                                <div className="social-links">
+                                    {socialLinks.map((link, index) => (
+                                        <a key={index} href={link.href}>
+                                            <i className={link.icon}></i>
+                                        </a>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            <div className="footer-section">
+                                <h4>Quick Links</h4>
+                                <ul>
+                                    {quickLinks.map((link, index) => (
+                                        <li key={index}>
+                                            <a href={`#${link.toLowerCase().replace(' ', '-')}`}>{link}</a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            <div className="footer-section">
+                                <h4>Support</h4>
+                                <ul>
+                                    {supportLinks.map((link, index) => (
+                                        <li key={index}>
+                                            <a href="#">{link}</a>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                            
+                            <div className="footer-section">
+                                <h4>Contact</h4>
+                                <div className="contact-info">
+                                    <p><i className="fas fa-envelope"></i> support@bidcraft.com</p>
+                                    <p><i className="fas fa-phone"></i> +1 (555) 123-4567</p>
+                                    <p><i className="fas fa-map-marker-alt"></i> 123 Craft Street, Art District</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="footer-bottom">
+                            <p>&copy; 2025 BidCraft. All rights reserved.</p>
+                            <div className="footer-links">
+                                <a href="#">Privacy Policy</a>
+                                <a href="#">Terms of Service</a>
+                                <a href="#">Cookie Policy</a>
+                            </div>
+                        </div>
+                    </div>
+                </footer>
+            );
+        };
+        
+        const NotificationContainer = ({ notifications, onRemove }) => {
+            return (
+                <div className="notification-container">
+                    {notifications.map((notification) => (
+                        <div
+                            key={notification.id}
+                            className={`notification notification-${notification.type} show`}
+                        >
+                            <div className="notification-content">
+                                <span className="notification-message">{notification.message}</span>
+                                <button 
+                                    className="notification-close"
+                                    onClick={() => onRemove(notification.id)}
+                                >
+                                    &times;
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            );
+        };
+        
+        // Main App Component
+        const App = () => {
+            const { notifications, addNotification, removeNotification } = useNotifications();
+            
+            return (
+                <div className="App">
+                    <Navbar />
+                    <Hero onGetStarted={() => addNotification('Welcome to BidCraft!', 'success')} />
+                    <FeaturedAuctions onBidPlaced={(amount) => 
+                        addNotification(`Your bid of $${amount} has been placed successfully!`, 'success')
+                    } />
+                    <Categories />
+                    <HowItWorks />
+                    <About />
+                    <Newsletter onSubscribe={() => 
+                        addNotification('Thank you for subscribing! We\'ll keep you updated.', 'success')
+                    } />
+                    <Footer />
+                    <NotificationContainer 
+                        notifications={notifications}
+                        onRemove={removeNotification}
+                    />
+                </div>
+            );
+        };
+        
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
