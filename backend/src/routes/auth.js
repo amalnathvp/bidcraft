@@ -8,9 +8,20 @@ const router = express.Router();
 // Validation rules
 const registerValidation = [
   body('name')
+    .optional()
     .trim()
     .isLength({ min: 2, max: 100 })
     .withMessage('Name must be between 2 and 100 characters'),
+  body('firstName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('First name must be between 2 and 50 characters'),
+  body('lastName')
+    .optional()
+    .trim()
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Last name must be between 2 and 50 characters'),
   body('email')
     .isEmail()
     .normalizeEmail()
@@ -22,8 +33,8 @@ const registerValidation = [
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('role')
     .optional()
-    .isIn(['buyer', 'seller'])
-    .withMessage('Role must be either buyer or seller')
+    .isIn(['buyer', 'seller', 'user'])
+    .withMessage('Role must be either buyer, seller, or user')
 ];
 
 const loginValidation = [

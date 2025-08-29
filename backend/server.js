@@ -78,17 +78,37 @@ io.on('connection', (socket) => {
   });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bidcraft', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('MongoDB connected successfully');
-  // Start scheduled jobs after DB connection
-  startScheduledJobs();
-})
-.catch(err => console.error('MongoDB connection error:', err));
+// MongoDB connection - Local MongoDB setup
+console.log('Connecting to local MongoDB...');
+
+const connectDB = async () => {
+  const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/bidcraft';
+  
+  console.log('MongoDB URI:', mongoURI);
+  
+  try {
+    await mongoose.connect(mongoURI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log('✅ MongoDB connected successfully');
+    console.log('📊 Database:', mongoose.connection.db.databaseName);
+    console.log('🌐 Host:', mongoose.connection.host);
+    console.log('🔌 Port:', mongoose.connection.port);
+    
+    // Start scheduled jobs after successful DB connection
+    startScheduledJobs();
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error.message);
+    console.log('\n🔧 Troubleshooting:');
+    console.log('1. Check if MongoDB service is running: net start MongoDB');
+    console.log('2. Verify MongoDB is listening on 127.0.0.1:27017');
+    console.log('3. Check Windows Services for "MongoDB" service');
+    process.exit(1);
+  }
+};
+
+connectDB();
 
 // Error handling middleware (must be after routes)
 app.use(notFound);

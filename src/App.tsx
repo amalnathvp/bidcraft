@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import FeaturedAuctions from './components/FeaturedAuctions';
@@ -107,20 +108,22 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="App">
-      <Navbar 
-        currentPage={currentPage} 
-        onNavigate={handleNavigation}
-        user={user}
-        onLogout={handleLogout}
-      />
-      {renderPage()}
-      {currentPage === 'home' && <Footer />}
-      <NotificationContainer 
-        notifications={notifications}
-        onRemove={removeNotification}
-      />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <Navbar 
+          currentPage={currentPage} 
+          onNavigate={handleNavigation}
+          user={user}
+          onLogout={handleLogout}
+        />
+        {renderPage()}
+        {currentPage === 'home' && <Footer />}
+        <NotificationContainer 
+          notifications={notifications}
+          onRemove={removeNotification}
+        />
+      </div>
+    </AuthProvider>
   );
 };
 

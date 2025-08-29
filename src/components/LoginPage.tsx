@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -6,6 +7,8 @@ interface LoginPageProps {
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
+  // Use authentication context for login functionality
+  const { login, loading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -13,7 +16,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [isLoading, setIsLoading] = useState(false);
+  // Removed isLoading - now using loading from auth context
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -59,24 +62,29 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
       return;
     }
 
-    setIsLoading(true);
+    // Clear any previous auth errors
+    clearError();
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful login
-      onLogin({
+      // Use auth context login method
+      await login({
         email: formData.email,
-        name: 'John Doe', // This would come from the API
-        isAuthenticated: true
+        password: formData.password
       });
       
+      // Call original onLogin for backward compatibility
+      if (onLogin) {
+        onLogin({
+          email: formData.email,
+          isAuthenticated: true
+        });
+      }
+      
+      // Navigate to home page on success
       onNavigate('home');
-    } catch (error) {
-      setErrors({ general: 'Login failed. Please try again.' });
-    } finally {
-      setIsLoading(false);
+    } catch (error: any) {
+      // Handle login errors
+      setErrors({ general: error.message || 'Login failed. Please try again.' });
     }
   };
 
@@ -144,10 +152,10 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
 
             <button 
               type="submit" 
-              className={`btn-primary auth-submit ${isLoading ? 'loading' : ''}`}
-              disabled={isLoading}
+              className={`btn-primary auth-submit ${loading ? 'loading' : ''}`}
+              disabled={loading}
             >
-              {isLoading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
 

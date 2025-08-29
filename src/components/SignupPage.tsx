@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SignupPageProps {
   onNavigate: (page: string) => void;
@@ -6,6 +7,8 @@ interface SignupPageProps {
 }
 
 const SignupPage: React.FC<SignupPageProps> = ({ onNavigate, onSignup }) => {
+  // Use authentication context for registration functionality
+  const { register, loading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -25,7 +28,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onNavigate, onSignup }) => {
   });
 
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [isLoading, setIsLoading] = useState(false);
+  // Removed isLoading - now using loading from auth context
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -140,25 +143,34 @@ const SignupPage: React.FC<SignupPageProps> = ({ onNavigate, onSignup }) => {
       return;
     }
 
-    setIsLoading(true);
+    // Clear any previous auth errors
+    clearError();
     
-    // Simulate API call
     try {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Mock successful signup
-      onSignup({
+      // Use auth context register method
+      await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
-        name: `${formData.firstName} ${formData.lastName}`,
-        accountType: formData.accountType,
-        isAuthenticated: true
+        password: formData.password,
+        role: formData.accountType === 'seller' ? 'seller' : 'buyer'
       });
       
+      // Call original onSignup for backward compatibility
+      if (onSignup) {
+        onSignup({
+          email: formData.email,
+          name: `${formData.firstName} ${formData.lastName}`,
+          accountType: formData.accountType,
+          isAuthenticated: true
+        });
+      }
+      
+      // Navigate to home page on success
       onNavigate('home');
-    } catch (error) {
-      setErrors({ general: 'Registration failed. Please try again.' });
-    } finally {
-      setIsLoading(false);
+    } catch (error: any) {
+      // Handle registration errors
+      setErrors({ general: error.message || 'Registration failed. Please try again.' });
     }
   };
 
@@ -439,10 +451,10 @@ const SignupPage: React.FC<SignupPageProps> = ({ onNavigate, onSignup }) => {
 
             <button 
               type="submit" 
-              className={`btn-primary auth-submit ${isLoading ? 'loading' : ''}`}
-              disabled={isLoading}
+              className={`btn-primary auth-submit ${loading ? 'loading' : ''}`}
+              disabled={loading}
             >
-              {isLoading ? 'Creating Account...' : 'Create Account'}
+              {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 

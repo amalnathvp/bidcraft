@@ -29,8 +29,11 @@ const sendTokenResponse = (user, statusCode, res) => {
       success: true,
       token,
       user: {
+        id: user._id.toString(),
         _id: user._id,
         name: user.name,
+        firstName: user.name.split(' ')[0] || user.name,
+        lastName: user.name.split(' ').slice(1).join(' ') || '',
         email: user.email,
         role: user.role,
         avatar: user.avatar,
@@ -55,7 +58,19 @@ const register = asyncHandler(async (req, res, next) => {
     });
   }
 
-  const { name, email, password, role } = req.body;
+  const { name, firstName, lastName, email, password, role } = req.body;
+
+  // Handle both name and firstName/lastName formats
+  let fullName = name;
+  if (!fullName && firstName && lastName) {
+    fullName = `${firstName} ${lastName}`;
+  }
+  if (!fullName && firstName) {
+    fullName = firstName;
+  }
+  if (!fullName) {
+    return next(new AppError('Name is required', 400));
+  }
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
@@ -65,7 +80,7 @@ const register = asyncHandler(async (req, res, next) => {
 
   // Create user
   const user = await User.create({
-    name,
+    name: fullName,
     email,
     password,
     role: role || 'buyer'
@@ -75,7 +90,16 @@ const register = asyncHandler(async (req, res, next) => {
   const verificationToken = user.getVerificationToken();
   await user.save({ validateBeforeSave: false });
 
-  // Send verification email
+  // For development, skip email sending and auto-verify
+  if (process.env.NODE_ENV === 'development') {
+    user.isVerified = true;
+    await user.save({ validateBeforeSave: false });
+    
+    sendTokenResponse(user, 201, res);
+    return;
+  }
+
+  // Send verification email in production
   try {
     const verificationUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
     
@@ -185,7 +209,20 @@ const getMe = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    user
+    user: {
+      id: user._id.toString(),
+      _id: user._id,
+      name: user.name,
+      firstName: user.name.split(' ')[0] || user.name,
+      lastName: user.name.split(' ').slice(1).join(' ') || '',
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      isVerified: user.isVerified,
+      shopName: user.shopName,
+      sellerRating: user.sellerRating,
+      watchlist: user.watchlist
+    }
   });
 });
 
