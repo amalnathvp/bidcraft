@@ -7,10 +7,16 @@ import { apiService } from './api';
 // Simple user data interface
 export interface User {
   id: string;
-  firstName: string;
-  lastName: string;
+  _id?: string;
+  name: string;
+  firstName?: string; // Derived from name
+  lastName?: string;  // Derived from name
   email: string;
   role: string;
+  isVerified?: boolean;
+  avatar?: string;
+  shopName?: string;
+  sellerRating?: number;
 }
 
 // API response format for authentication
@@ -28,8 +34,9 @@ export interface LoginCredentials {
 
 // Registration form data
 export interface RegisterData {
-  firstName: string;
-  lastName: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   password: string;
   role?: string;

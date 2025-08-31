@@ -33,8 +33,8 @@ const registerValidation = [
     .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   body('role')
     .optional()
-    .isIn(['buyer', 'seller', 'user'])
-    .withMessage('Role must be either buyer, seller, or user')
+    .isIn(['buyer', 'seller', 'user', 'admin'])
+    .withMessage('Role must be either buyer, seller, user, or admin')
 ];
 
 const loginValidation = [

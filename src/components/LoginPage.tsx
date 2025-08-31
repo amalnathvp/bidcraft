@@ -67,10 +67,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
     
     try {
       // Use auth context login method
+      console.log('Attempting login with:', { email: formData.email });
       await login({
         email: formData.email,
         password: formData.password
       });
+      
+      console.log('Login successful, user authenticated');
       
       // Call original onLogin for backward compatibility
       if (onLogin) {
@@ -84,6 +87,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLogin }) => {
       onNavigate('home');
     } catch (error: any) {
       // Handle login errors
+      console.error('Login error:', error);
       setErrors({ general: error.message || 'Login failed. Please try again.' });
     }
   };

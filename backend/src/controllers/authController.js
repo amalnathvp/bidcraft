@@ -157,18 +157,25 @@ const login = asyncHandler(async (req, res, next) => {
   }
 
   const { email, password } = req.body;
+  console.log('🔐 Login attempt for:', email);
 
   // Check for user
   const user = await User.findOne({ email }).select('+password');
 
   if (!user) {
+    console.log('❌ User not found:', email);
     return next(new AppError('Invalid credentials', 401));
   }
 
+  console.log('✅ User found:', user.email, 'Role:', user.role);
+  console.log('🔍 User active:', user.isActive, 'Verified:', user.isVerified);
+
   // Check if password matches
   const isMatch = await user.comparePassword(password);
+  console.log('🔐 Password match result:', isMatch);
 
   if (!isMatch) {
+    console.log('❌ Password verification failed for:', email);
     return next(new AppError('Invalid credentials', 401));
   }
 

@@ -57,11 +57,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Check if user data is stored locally
         const storedUser = authService.getCurrentUserFromStorage();
         if (storedUser && authService.isAuthenticated()) {
-          setUser(storedUser);
-          
           // Verify with server to ensure token is still valid
           const currentUser = await authService.getCurrentUser();
-          setUser(currentUser);
+          if (currentUser) {
+            setUser(currentUser);
+          } else {
+            // Token is invalid, clear stored data
+            authService.logout();
+            setUser(null);
+          }
+        } else {
+          setUser(null);
         }
       } catch (error) {
         console.error('Auth initialization failed:', error);
@@ -84,9 +90,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
       setError(null);
       
+      console.log('AuthContext: Starting login for:', credentials.email);
       const response = await authService.login(credentials);
+      console.log('AuthContext: Login response:', response);
       setUser(response.user);
+      console.log('AuthContext: User set:', response.user);
     } catch (error: any) {
+      console.error('AuthContext: Login error:', error);
       setError(error.message || 'Login failed');
       throw error; // Re-throw for component handling
     } finally {

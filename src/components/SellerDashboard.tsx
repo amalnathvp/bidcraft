@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/ListNewItemPage.css';
 
 interface SellerDashboardProps {
   onNavigate?: (page: string) => void;
@@ -225,7 +226,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
         <div className="action-buttons">
           <button 
             className="action-btn"
-            onClick={() => setShowListingModal(true)}
+            onClick={() => onNavigate && onNavigate('list-new-item')}
           >
             <i className="fas fa-plus"></i>
             <span>List New Item</span>
@@ -259,7 +260,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
         <h3>My Inventory</h3>
         <button 
           className="btn-primary"
-          onClick={() => setShowListingModal(true)}
+          onClick={() => onNavigate && onNavigate('list-new-item')}
         >
           <i className="fas fa-plus"></i>
           List New Item
@@ -700,18 +701,113 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
     title: '',
     category: '',
     startingBid: '',
-    duration: '7'
+    duration: '7',
+    description: '',
+    condition: 'good'
   });
+  const [images, setImages] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length > 5) {
+      setError('Maximum 5 images allowed');
+      return;
+    }
+    
+    setImages(files);
+    setError('');
+    
+    // Create previews
+    const previews = files.map(file => URL.createObjectURL(file));
+    setImagePreviews(prev => {
+      // Clean up old previews
+      prev.forEach(preview => URL.revokeObjectURL(preview));
+      return previews;
+    });
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = images.filter((_, i) => i !== index);
+    const newPreviews = imagePreviews.filter((_, i) => i !== index);
+    
+    // Clean up the removed preview
+    URL.revokeObjectURL(imagePreviews[index]);
+    
+    setImages(newImages);
+    setImagePreviews(newPreviews);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle quick listing creation
-    onClose();
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Validate required fields
+      if (!formData.title.trim() || !formData.category || !formData.startingBid) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      if (images.length === 0) {
+        throw new Error('Please add at least one image');
+      }
+
+      // Create FormData for file upload
+      const submitData = new FormData();
+      submitData.append('title', formData.title.trim());
+      submitData.append('description', formData.description.trim() || `Beautiful ${formData.title}`);
+      submitData.append('category', formData.category);
+      submitData.append('startingPrice', formData.startingBid);
+      submitData.append('condition', formData.condition);
+      submitData.append('duration', formData.duration);
+      
+      // Add images
+      images.forEach((image, index) => {
+        submitData.append('images', image);
+      });
+
+      // Calculate end time based on duration
+      const startTime = new Date();
+      const endTime = new Date();
+      endTime.setDate(endTime.getDate() + parseInt(formData.duration));
+      
+      submitData.append('startTime', startTime.toISOString());
+      submitData.append('endTime', endTime.toISOString());
+
+      const response = await fetch('/api/auctions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: submitData
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create auction');
+      }
+
+      const auction = await response.json();
+      console.log('Auction created successfully:', auction);
+      
+      // Show success message and close modal
+      alert('Auction created successfully! It will be reviewed and published shortly.');
+      onClose();
+
+    } catch (err) {
+      console.error('Error creating auction:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create auction');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -727,6 +823,13 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
         </div>
 
         <form onSubmit={handleSubmit} className="quick-listing-form">
+          {error && (
+            <div className="error-message">
+              <i className="fas fa-exclamation-circle"></i>
+              {error}
+            </div>
+          )}
+
           <div className="form-group">
             <label htmlFor="title">Item Title *</label>
             <input
@@ -738,6 +841,55 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
               placeholder="Enter item title"
               required
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="Brief description of your item..."
+              rows={3}
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="images">Item Images * (Max 5 images)</label>
+            <div className="image-upload-area">
+              <input
+                type="file"
+                id="images"
+                name="images"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="image-input"
+              />
+              <div className="upload-prompt">
+                <i className="fas fa-cloud-upload-alt"></i>
+                <p>Click to upload images or drag and drop</p>
+                <span>PNG, JPG, GIF up to 5MB each</span>
+              </div>
+            </div>
+            
+            {imagePreviews.length > 0 && (
+              <div className="image-previews">
+                {imagePreviews.map((preview, index) => (
+                  <div key={index} className="image-preview">
+                    <img src={preview} alt={`Preview ${index + 1}`} />
+                    <button 
+                      type="button" 
+                      className="remove-image"
+                      onClick={() => removeImage(index)}
+                    >
+                      <i className="fas fa-times"></i>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="form-row">
@@ -761,6 +913,25 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
             </div>
 
             <div className="form-group">
+              <label htmlFor="condition">Condition *</label>
+              <select
+                id="condition"
+                name="condition"
+                value={formData.condition}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="new">New</option>
+                <option value="like-new">Like New</option>
+                <option value="good">Good</option>
+                <option value="fair">Fair</option>
+                <option value="poor">Poor</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
               <label htmlFor="startingBid">Starting Bid ($) *</label>
               <input
                 type="number"
@@ -770,32 +941,40 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
                 onChange={handleInputChange}
                 placeholder="25"
                 min="1"
+                step="0.01"
                 required
               />
             </div>
-          </div>
 
-          <div className="form-group">
-            <label htmlFor="duration">Auction Duration</label>
-            <select
-              id="duration"
-              name="duration"
-              value={formData.duration}
-              onChange={handleInputChange}
-            >
-              <option value="3">3 Days</option>
-              <option value="5">5 Days</option>
-              <option value="7">7 Days</option>
-              <option value="10">10 Days</option>
-            </select>
+            <div className="form-group">
+              <label htmlFor="duration">Auction Duration</label>
+              <select
+                id="duration"
+                name="duration"
+                value={formData.duration}
+                onChange={handleInputChange}
+              >
+                <option value="3">3 Days</option>
+                <option value="5">5 Days</option>
+                <option value="7">7 Days</option>
+                <option value="10">10 Days</option>
+              </select>
+            </div>
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-outline" onClick={onClose}>
+            <button type="button" className="btn-outline" onClick={onClose} disabled={isLoading}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary">
-              Create Draft
+            <button type="submit" className="btn-primary" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <i className="fas fa-spinner fa-spin"></i>
+                  Creating...
+                </>
+              ) : (
+                'Create Auction'
+              )}
             </button>
           </div>
         </form>

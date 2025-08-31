@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { AuctionItem } from '../types';
+import { useFeaturedAuctions } from '../hooks';
+import { transformAuctionForDisplay, formatCurrency } from '../utils/auctionUtils';
 import BidModal from './BidModal';
 
 interface FeaturedAuctionsProps {
@@ -8,39 +10,10 @@ interface FeaturedAuctionsProps {
 
 const FeaturedAuctions: React.FC<FeaturedAuctionsProps> = ({ onBidPlaced }) => {
   const [selectedItem, setSelectedItem] = useState<AuctionItem | null>(null);
+  const { auctions, loading, error } = useFeaturedAuctions();
 
-  const auctionItems: AuctionItem[] = [
-    {
-      id: '1',
-      title: 'Vintage Ceramic Vase',
-      artisan: 'Maria Santos',
-      currentBid: 125,
-      bidCount: 12,
-      timeRemaining: '2h 45m left',
-      imageUrl: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=300&h=200&fit=crop',
-      isLive: true
-    },
-    {
-      id: '2',
-      title: 'Carved Wooden Sculpture',
-      artisan: 'John Craftsman',
-      currentBid: 280,
-      bidCount: 8,
-      timeRemaining: '5h 12m left',
-      imageUrl: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=300&h=200&fit=crop',
-      isLive: true
-    },
-    {
-      id: '3',
-      title: 'Traditional Handwoven Rug',
-      artisan: 'Amira Hassan',
-      currentBid: 450,
-      bidCount: 15,
-      timeRemaining: '1d 3h left',
-      imageUrl: 'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=300&h=200&fit=crop',
-      isLive: true
-    }
-  ];
+  // Debug logging
+  console.log('FeaturedAuctions Debug:', { auctions, loading, error });
 
   const handleBidClick = (item: AuctionItem) => {
     setSelectedItem(item);
@@ -53,6 +26,51 @@ const FeaturedAuctions: React.FC<FeaturedAuctionsProps> = ({ onBidPlaced }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <section id="auctions" className="featured-auctions">
+        <div className="container">
+          <div className="section-header">
+            <h2>Live Auctions</h2>
+            <p>Don't miss out on these exceptional pieces</p>
+          </div>
+          <div className="auctions-grid">
+            {/* Loading skeleton */}
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="auction-card loading">
+                <div className="card-image skeleton"></div>
+                <div className="card-content">
+                  <div className="skeleton-text"></div>
+                  <div className="skeleton-text"></div>
+                  <div className="skeleton-text"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="auctions" className="featured-auctions">
+        <div className="container">
+          <div className="section-header">
+            <h2>Live Auctions</h2>
+            <p>Don't miss out on these exceptional pieces</p>
+          </div>
+          <div className="error-message">
+            <p>Failed to load auctions: {error}</p>
+            <button onClick={() => window.location.reload()} className="btn-primary">
+              Try Again
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section id="auctions" className="featured-auctions">
       <div className="container">
@@ -61,28 +79,40 @@ const FeaturedAuctions: React.FC<FeaturedAuctionsProps> = ({ onBidPlaced }) => {
           <p>Don't miss out on these exceptional pieces</p>
         </div>
         <div className="auctions-grid">
-          {auctionItems.map((item) => (
-            <div key={item.id} className="auction-card">
-              <div className="card-image">
-                <img src={item.imageUrl} alt={item.title} />
-                <div className="time-remaining">{item.timeRemaining}</div>
-              </div>
-              <div className="card-content">
-                <h3>{item.title}</h3>
-                <p className="artisan">by {item.artisan}</p>
-                <div className="bid-info">
-                  <span className="current-bid">${item.currentBid}</span>
-                  <span className="bid-count">{item.bidCount} bids</span>
+          {auctions.slice(0, 6).map((auction) => {
+            const displayAuction = transformAuctionForDisplay(auction);
+            return (
+              <div key={auction._id} className="auction-card">
+                <div className="card-image">
+                  <img src={displayAuction.imageUrl} alt={auction.title} />
+                  <div className="time-remaining">{displayAuction.timeRemaining}</div>
                 </div>
-                <button 
-                  className="btn-primary small"
-                  onClick={() => handleBidClick(item)}
-                >
-                  Place Bid
-                </button>
+                <div className="card-content">
+                  <h3>{auction.title}</h3>
+                  <p className="artisan">by {displayAuction.artisan}</p>
+                  <div className="bid-info">
+                    <span className="current-bid">{formatCurrency(auction.currentPrice)}</span>
+                    <span className="bid-count">{auction.totalBids} bids</span>
+                  </div>
+                  <button 
+                    className="btn-primary small"
+                    onClick={() => handleBidClick(auction)}
+                    disabled={!displayAuction.isLive}
+                  >
+                    {displayAuction.isLive ? 'Place Bid' : 'Auction Ended'}
+                  </button>
+                </div>
               </div>
+            );
+          })}
+          
+          {/* Show message if no featured auctions */}
+          {auctions.length === 0 && (
+            <div className="no-auctions">
+              <p>No featured auctions available at the moment.</p>
+              <p>Check back soon for exciting new items!</p>
             </div>
-          ))}
+          )}
         </div>
         <div className="section-footer">
           <button className="btn-outline">View All Auctions</button>
@@ -91,7 +121,7 @@ const FeaturedAuctions: React.FC<FeaturedAuctionsProps> = ({ onBidPlaced }) => {
       
       {selectedItem && (
         <BidModal
-          item={selectedItem}
+          item={transformAuctionForDisplay(selectedItem)}
           onClose={() => setSelectedItem(null)}
           onSubmit={handleBidSubmit}
         />

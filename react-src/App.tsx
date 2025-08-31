@@ -8,6 +8,7 @@ import About from './components/About';
 import Newsletter from './components/Newsletter';
 import Footer from './components/Footer';
 import NotificationContainer from './components/NotificationContainer';
+import ApiTest from './components/ApiTest';
 import { useNotifications } from './hooks';
 import './App.css';
 
@@ -16,6 +17,7 @@ const App: React.FC = () => {
 
   return (
     <div className="App">
+      <ApiTest />
       <Navbar />
       <Hero onGetStarted={() => addNotification('Welcome to BidCraft!', 'success')} />
       <FeaturedAuctions onBidPlaced={(amount: number) => 

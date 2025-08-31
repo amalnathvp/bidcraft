@@ -96,7 +96,7 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               >
                 <i className="fas fa-user"></i>
-                <span>{user.name}</span>
+                <span>{user.firstName} {user.lastName}</span>
                 <i className={`fas fa-chevron-${isUserMenuOpen ? 'up' : 'down'}`}></i>
               </button>
               {isUserMenuOpen && (
@@ -115,6 +115,15 @@ const Navbar: React.FC<NavbarProps> = ({
                     >
                       <i className="fas fa-store"></i>
                       Seller Dashboard
+                    </button>
+                  )}
+                  {user.role === 'admin' && (
+                    <button 
+                      onClick={() => handleAuthNavigation('admin-dashboard')} 
+                      className="dropdown-item admin-link"
+                    >
+                      <i className="fas fa-crown"></i>
+                      Admin Dashboard
                     </button>
                   )}
                   <button 
@@ -157,6 +166,13 @@ const Navbar: React.FC<NavbarProps> = ({
                 onClick={() => handleAuthNavigation('signup')}
               >
                 Sign Up
+              </button>
+              <button 
+                className="btn-secondary"
+                onClick={() => handleAuthNavigation('admin-setup')}
+                style={{ marginLeft: '10px', fontSize: '12px' }}
+              >
+                Admin Setup
               </button>
             </>
           )}

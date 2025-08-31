@@ -1,8 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { apiService } from '../services/api';
 
 interface LiveAuctionsProps {
   onNavigate?: (page: string, data?: any) => void;
 }
+
+interface Auction {
+  _id: string;
+  title: string;
+  description?: string;
+  category: {
+    _id: string;
+    name: string;
+    slug: string;
+  };
+  currentPrice: number;
+  startingPrice: number;
+  totalBids: number;
+  endTime: string;
+  startTime: string;
+  images: Array<{
+    url: string;
+    publicId: string;
+    alt?: string;
+  }>;
+  seller: {
+    _id: string;
+    name?: string;
+    shopName?: string;
+  };
+  condition: string;
+  status: string;
+  watchers?: string[];
+  reservePrice?: number;
+  timeRemaining?: number;
+}
+
+// Define common auction type for filtering and display
+type DisplayAuction = {
+  id: string;
+  title: string;
+  category: string;
+  currentBid: number;
+  startingBid: number;
+  bidCount: number;
+  timeLeft: string;
+  endTime: string;
+  image: string;
+  seller: string;
+  condition: string;
+  isHot: boolean;
+  reserveMet: boolean;
+  watchers: number;
+};
 
 const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -10,6 +60,72 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   const [sortBy, setSortBy] = useState('ending-soon');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [showFilters, setShowFilters] = useState(false);
+  const [auctions, setAuctions] = useState<Auction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch auctions from API
+  useEffect(() => {
+    fetchAuctions();
+  }, [selectedCategory, sortBy]);
+
+  const fetchAuctions = async () => {
+    try {
+      setLoading(true);
+      const queryParams = new URLSearchParams();
+      
+      if (selectedCategory !== 'all') {
+        queryParams.append('category', selectedCategory);
+      }
+      
+      if (sortBy) {
+        const sortField = sortBy === 'ending-soon' ? 'endTime' : 
+                         sortBy === 'newest' ? 'createdAt' : 
+                         sortBy === 'price-low' ? 'currentPrice' : 'currentPrice';
+        const sortOrder = sortBy === 'price-high' ? 'desc' : 'asc';
+        
+        queryParams.append('sortBy', sortField);
+        queryParams.append('sortOrder', sortOrder);
+      }
+
+      const endpoint = `/auctions?${queryParams.toString()}`;
+      const response = await apiService.get(endpoint);
+      
+      if (response.success) {
+        setAuctions(response.data);
+      } else {
+        setError('Failed to fetch auctions');
+      }
+    } catch (error) {
+      console.error('Error fetching auctions:', error);
+      setError('Failed to load auctions');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatTimeRemaining = (endTime: string): string => {
+    const now = new Date();
+    const end = new Date(endTime);
+    const diff = end.getTime() - now.getTime();
+
+    if (diff <= 0) return 'Ended';
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+    if (days > 0) return `${days}d ${hours}h ${minutes}m`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+  };
+
+  const getImageUrl = (auction: Auction): string => {
+    if (auction.images && auction.images.length > 0) {
+      return auction.images[0].url;
+    }
+    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop';
+  };
 
   const categories = [
     { id: 'all', label: 'All Categories', count: 156 },
@@ -22,7 +138,26 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     { id: 'sculptures', label: 'Sculptures', count: 12 }
   ];
 
-  const liveAuctions = [
+  // Use real auction data with fallback to mock data for development
+  const liveAuctions: DisplayAuction[] = auctions.map(auction => ({
+    id: auction._id,
+    title: auction.title,
+    category: auction.category.name,
+    currentBid: auction.currentPrice || auction.startingPrice,
+    startingBid: auction.startingPrice,
+    bidCount: auction.totalBids || 0,
+    timeLeft: formatTimeRemaining(auction.endTime),
+    endTime: auction.endTime,
+    image: getImageUrl(auction),
+    seller: auction.seller?.name || auction.seller?.shopName || 'Unknown Seller',
+    condition: auction.condition || 'Good',
+    isHot: (auction.totalBids || 0) > 5, // Consider auction "hot" if it has more than 5 bids
+    reserveMet: (auction.currentPrice || auction.startingPrice) >= (auction.reservePrice || 0),
+    watchers: auction.watchers ? auction.watchers.length : Math.floor(Math.random() * 30) + 5
+  }));
+
+  // Fallback mock data for development if no auctions loaded  
+  const fallbackAuctions = [
     {
       id: '1',
       title: 'Vintage Kashmiri Pashmina Shawl',
@@ -153,14 +288,48 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     }
   ];
 
-  const featuredAuctions = liveAuctions.filter(auction => auction.isHot).slice(0, 3);
-  const endingSoon = liveAuctions.sort((a, b) => {
-    const timeA = parseFloat(a.timeLeft.split('d')[0]);
-    const timeB = parseFloat(b.timeLeft.split('d')[0]);
-    return timeA - timeB;
+  // Define common auction type for filtering and display
+  type DisplayAuction = {
+    id: string;
+    title: string;
+    category: string;
+    currentBid: number;
+    startingBid: number;
+    bidCount: number;
+    timeLeft: string;
+    endTime: string;
+    image: string;
+    seller: string;
+    condition: string;
+    isHot: boolean;
+    reserveMet: boolean;
+    watchers: number;
+  };
+
+  // Combine real auctions with fallback for seamless display
+  const allAuctions = auctions.length > 0 ? liveAuctions : fallbackAuctions;
+
+  const featuredAuctions = allAuctions.filter((auction: DisplayAuction) => auction.isHot).slice(0, 3);
+  const endingSoon = [...allAuctions].sort((a: DisplayAuction, b: DisplayAuction) => {
+    // Parse time remaining for sorting
+    const parseTimeLeft = (timeLeft: string) => {
+      if (timeLeft === 'Ended') return 0;
+      const parts = timeLeft.split(' ');
+      let totalMinutes = 0;
+      
+      parts.forEach(part => {
+        if (part.includes('d')) totalMinutes += parseInt(part) * 24 * 60;
+        else if (part.includes('h')) totalMinutes += parseInt(part) * 60;
+        else if (part.includes('m')) totalMinutes += parseInt(part);
+      });
+      
+      return totalMinutes;
+    };
+    
+    return parseTimeLeft(a.timeLeft) - parseTimeLeft(b.timeLeft);
   }).slice(0, 4);
 
-  const filteredAuctions = liveAuctions.filter(auction => {
+  const filteredAuctions = allAuctions.filter((auction: DisplayAuction) => {
     const matchesCategory = selectedCategory === 'all' || auction.category === selectedCategory;
     const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          auction.seller.toLowerCase().includes(searchTerm.toLowerCase());
@@ -203,6 +372,22 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="live-auctions">
+        <div className="loading-container" style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '400px',
+          fontSize: '18px'
+        }}>
+          Loading auctions...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="live-auctions">
       <div className="auctions-hero">
@@ -212,7 +397,7 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
             <p>Discover unique handicrafts from artisans around the world</p>
             <div className="auction-stats">
               <div className="stat">
-                <span className="number">{liveAuctions.length}</span>
+                <span className="number">{allAuctions.length}</span>
                 <span className="label">Active Auctions</span>
               </div>
               <div className="stat">
@@ -298,7 +483,7 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
         <div className="featured-section">
           <h2>🔥 Hot Auctions</h2>
           <div className="featured-grid">
-            {featuredAuctions.map(auction => (
+            {featuredAuctions.map((auction: DisplayAuction) => (
               <div key={auction.id} className="featured-card" onClick={() => handleAuctionClick(auction)}>
                 <div className="featured-image">
                   <img src={auction.image} alt={auction.title} />

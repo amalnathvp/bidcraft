@@ -8,7 +8,7 @@
     "dev": "nodemon server.js",
     "test": "jest",
     "test:watch": "jest --watch",
-    "seed": "node seed.js",
+    "seed": "node src/utils/seeder.js",
     "lint": "echo 'No linting configured'",
     "build": "echo 'No build step required'"
   },

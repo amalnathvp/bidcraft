@@ -125,6 +125,13 @@ const getAuction = asyncHandler(async (req, res, next) => {
 // @route   POST /api/auctions
 // @access  Private (Seller only)
 const createAuction = asyncHandler(async (req, res, next) => {
+  console.log('=== CREATE AUCTION REQUEST ===');
+  console.log('Method:', req.method);
+  console.log('Headers:', req.headers);
+  console.log('Body:', req.body);
+  console.log('Files:', req.files ? req.files.length : 0);
+  console.log('User:', req.user ? req.user._id : 'No user');
+  
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -134,46 +141,123 @@ const createAuction = asyncHandler(async (req, res, next) => {
       errors: formatValidationErrors(errors)
     });
   }
-  
-  // Add seller to req.body
-  req.body.seller = req.user._id;
-  
-  // Validate category exists
-  const category = await Category.findById(req.body.category);
-  if (!category) {
-    return next(new AppError('Category not found', 404));
+
+  try {
+    // Handle image uploads first
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      const cloudinary = require('cloudinary').v2;
+      
+      const uploadPromises = req.files.map(file => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: 'bidcraft/auctions',
+              transformation: [
+                { width: 800, height: 600, crop: 'fill' },
+                { quality: 'auto' },
+                { fetch_format: 'auto' }
+              ],
+              resource_type: 'image'
+            },
+            (error, result) => {
+              if (error) {
+                reject(error);
+              } else {
+                resolve({
+                  url: result.secure_url,
+                  publicId: result.public_id,
+                  alt: `${req.body.title} image`
+                });
+              }
+            }
+          );
+          uploadStream.end(file.buffer);
+        });
+      });
+
+      images = await Promise.all(uploadPromises);
+    }
+
+    // Add seller to req.body
+    req.body.seller = req.user._id;
+    req.body.images = images;
+    
+    // For quick listings, handle category as string and find/create category
+    if (typeof req.body.category === 'string') {
+      let category = await Category.findOne({ 
+        $or: [
+          { name: { $regex: new RegExp(req.body.category, 'i') } },
+          { slug: req.body.category.toLowerCase() }
+        ]
+      });
+      
+      if (!category) {
+        // Create a simple category if it doesn't exist
+        category = await Category.create({
+          name: req.body.category.charAt(0).toUpperCase() + req.body.category.slice(1),
+          slug: req.body.category.toLowerCase(),
+          description: `${req.body.category} items`
+        });
+      }
+      req.body.category = category._id;
+    }
+    
+    // Validate category exists
+    const category = await Category.findById(req.body.category);
+    if (!category) {
+      return next(new AppError('Category not found', 404));
+    }
+    
+    // Handle start and end times
+    let startTime, endTime;
+    if (req.body.startTime && req.body.endTime) {
+      startTime = new Date(req.body.startTime);
+      endTime = new Date(req.body.endTime);
+    } else if (req.body.duration) {
+      // For quick listings with duration in days
+      startTime = new Date();
+      endTime = new Date();
+      endTime.setDate(endTime.getDate() + parseInt(req.body.duration));
+    } else {
+      return next(new AppError('Start time and end time, or duration is required', 400));
+    }
+    
+    const now = new Date();
+    
+    if (startTime < now) {
+      startTime = now; // Start immediately for quick listings
+    }
+    
+    if (endTime <= startTime) {
+      return next(new AppError('End time must be after start time', 400));
+    }
+    
+    const duration = endTime - startTime;
+    if (duration < 3600000) { // 1 hour minimum
+      return next(new AppError('Auction duration must be at least 1 hour', 400));
+    }
+    
+    req.body.startTime = startTime;
+    req.body.endTime = endTime;
+    req.body.duration = duration;
+    req.body.status = 'active'; // Auto-activate quick listings
+
+    const auction = await Auction.create(req.body);
+    
+    // Populate the created auction
+    await auction.populate('category', 'name slug');
+    await auction.populate('seller', 'name shopName');
+    
+    res.status(201).json({
+      success: true,
+      data: auction
+    });
+
+  } catch (error) {
+    console.error('Auction creation error:', error);
+    return next(new AppError('Error creating auction', 500));
   }
-  
-  // Validate start and end times
-  const startTime = new Date(req.body.startTime);
-  const endTime = new Date(req.body.endTime);
-  const now = new Date();
-  
-  if (startTime < now) {
-    return next(new AppError('Start time cannot be in the past', 400));
-  }
-  
-  if (endTime <= startTime) {
-    return next(new AppError('End time must be after start time', 400));
-  }
-  
-  const duration = endTime - startTime;
-  if (duration < 3600000) { // 1 hour minimum
-    return next(new AppError('Auction duration must be at least 1 hour', 400));
-  }
-  
-  req.body.duration = duration;
-  
-  const auction = await Auction.create(req.body);
-  
-  // Populate the created auction
-  await auction.populate('category', 'name slug');
-  await auction.populate('seller', 'name shopName');
-  
-  res.status(201).json({
-    success: true,
-    data: auction
-  });
 });
 
 // @desc    Update auction

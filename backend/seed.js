@@ -1,230 +1,490 @@
+/**
+ * Database Seeding Script for BidCraft
+ * Seeds the MongoDB database with sample data for development and testing
+ */
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-const User = require('./src/models/User');
-const Auction = require('./src/models/Auction');
-const Category = require('./src/models/Category');
-const Bid = require('./src/models/Bid');
 require('dotenv').config();
 
-/**
- * Database seeder script to populate local MongoDB with sample data
- * This creates initial categories, users, auctions, and bids for development
- */
+// Import models
+const User = require('./src/models/User');
+const Category = require('./src/models/Category');
+const Auction = require('./src/models/Auction');
+const Bid = require('./src/models/Bid');
 
-const sampleCategories = [
+// Sample categories data
+const categoriesData = [
   {
-    name: 'Electronics',
-    description: 'Electronic devices and gadgets',
-    imageUrl: 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=300'
+    name: 'Pottery & Ceramics',
+    slug: 'pottery-ceramics',
+    description: 'Handcrafted bowls, vases, and decorative pieces',
+    icon: 'fas fa-palette',
+    featured: true,
+    sortOrder: 1
   },
   {
-    name: 'Art & Collectibles',
-    description: 'Artwork, antiques, and collectible items',
-    imageUrl: 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=300'
+    name: 'Textiles & Fabrics',
+    slug: 'textiles-fabrics',
+    description: 'Traditional weaving, embroidery, and tapestries',
+    icon: 'fas fa-cut',
+    featured: true,
+    sortOrder: 2
   },
   {
-    name: 'Fashion',
-    description: 'Clothing, accessories, and fashion items',
-    imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=300'
+    name: 'Wood Crafts',
+    slug: 'wood-crafts',
+    description: 'Carved sculptures, furniture, and decorative items',
+    icon: 'fas fa-tree',
+    featured: true,
+    sortOrder: 3
   },
   {
-    name: 'Home & Garden',
-    description: 'Home decor, furniture, and garden items',
-    imageUrl: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=300'
+    name: 'Jewelry & Accessories',
+    slug: 'jewelry-accessories',
+    description: 'Handmade jewelry and personal accessories',
+    icon: 'fas fa-gem',
+    featured: true,
+    sortOrder: 4
   },
   {
-    name: 'Sports',
-    description: 'Sports equipment and memorabilia',
-    imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=300'
+    name: 'Metal Works',
+    slug: 'metal-works',
+    description: 'Forged items, sculptures, and decorative pieces',
+    icon: 'fas fa-hammer',
+    featured: true,
+    sortOrder: 5
+  },
+  {
+    name: 'Art & Paintings',
+    slug: 'art-paintings',
+    description: 'Original artworks and traditional paintings',
+    icon: 'fas fa-brush',
+    featured: true,
+    sortOrder: 6
+  },
+  {
+    name: 'Leather Goods',
+    slug: 'leather-goods',
+    description: 'Handmade leather bags, wallets, and accessories',
+    icon: 'fas fa-briefcase',
+    featured: false,
+    sortOrder: 7
+  },
+  {
+    name: 'Glass Works',
+    slug: 'glass-works',
+    description: 'Blown glass art and decorative pieces',
+    icon: 'fas fa-wine-glass',
+    featured: false,
+    sortOrder: 8
   }
 ];
 
-const sampleUsers = [
+// Sample users data (sellers and buyers)
+const usersData = [
   {
-    username: 'john_doe',
-    email: 'john@example.com',
+    name: 'Maria Santos',
+    email: 'maria.santos@example.com',
     password: 'password123',
-    firstName: 'John',
-    lastName: 'Doe',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150'
+    role: 'seller',
+    shopName: "Maria's Ceramic Studio",
+    shopDescription: 'Traditional Portuguese ceramic artist with 20+ years of experience',
+    sellerRating: 4.8,
+    totalSales: 45,
+    isVerified: true
   },
   {
-    username: 'jane_smith',
-    email: 'jane@example.com',
+    name: 'John Craftsman',
+    email: 'john.craftsman@example.com',
     password: 'password123',
-    firstName: 'Jane',
-    lastName: 'Smith',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150'
+    role: 'seller',
+    shopName: 'Woodworking Masters',
+    shopDescription: 'Specializing in carved wooden sculptures and furniture',
+    sellerRating: 4.9,
+    totalSales: 32,
+    isVerified: true
   },
   {
-    username: 'bob_wilson',
-    email: 'bob@example.com',
+    name: 'Amira Hassan',
+    email: 'amira.hassan@example.com',
     password: 'password123',
-    firstName: 'Bob',
-    lastName: 'Wilson',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150'
+    role: 'seller',
+    shopName: 'Heritage Textiles',
+    shopDescription: 'Traditional Middle Eastern textiles and rugs',
+    sellerRating: 4.7,
+    totalSales: 28,
+    isVerified: true
   },
   {
-    username: 'alice_brown',
-    email: 'alice@example.com',
+    name: 'David Chen',
+    email: 'david.chen@example.com',
     password: 'password123',
-    firstName: 'Alice',
-    lastName: 'Brown',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150'
+    role: 'seller',
+    shopName: 'Chen Jewelry',
+    shopDescription: 'Handcrafted jewelry with Asian influences',
+    sellerRating: 4.6,
+    totalSales: 19,
+    isVerified: true
+  },
+  {
+    name: 'Elena Rodriguez',
+    email: 'elena.rodriguez@example.com',
+    password: 'password123',
+    role: 'seller',
+    shopName: 'Metalwork Artistry',
+    shopDescription: 'Contemporary metal sculptures and decorative pieces',
+    sellerRating: 4.5,
+    totalSales: 15,
+    isVerified: true
+  },
+  {
+    name: 'Alice Cooper',
+    email: 'alice.cooper@example.com',
+    password: 'password123',
+    role: 'buyer',
+    isVerified: true
+  },
+  {
+    name: 'Bob Johnson',
+    email: 'bob.johnson@example.com',
+    password: 'password123',
+    role: 'buyer',
+    isVerified: true
+  },
+  {
+    name: 'Carol Williams',
+    email: 'carol.williams@example.com',
+    password: 'password123',
+    role: 'buyer',
+    isVerified: true
+  },
+  {
+    name: 'Admin User',
+    email: 'admin@bidcraft.com',
+    password: 'admin123',
+    role: 'admin',
+    isVerified: true
   }
 ];
 
-const sampleAuctions = [
-  {
-    title: 'Vintage MacBook Pro 2019',
-    description: 'Excellent condition MacBook Pro with original packaging. Barely used, perfect for students or professionals.',
-    startingPrice: 800,
-    currentPrice: 950,
-    images: ['https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400'],
-    endTime: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-    status: 'active',
-    categoryName: 'Electronics'
-  },
-  {
-    title: 'Abstract Oil Painting',
-    description: 'Original abstract oil painting by local artist. Vibrant colors and unique composition, perfect for modern homes.',
-    startingPrice: 300,
-    currentPrice: 420,
-    images: ['https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400'],
-    endTime: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // 5 days from now
-    status: 'active',
-    categoryName: 'Art & Collectibles'
-  },
-  {
-    title: 'Designer Leather Jacket',
-    description: 'Genuine leather jacket from premium brand. Size M, black color, worn only few times.',
-    startingPrice: 200,
-    currentPrice: 280,
-    images: ['https://images.unsplash.com/photo-1551028719-00167b16eac5?w=400'],
-    endTime: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    status: 'active',
-    categoryName: 'Fashion'
-  },
-  {
-    title: 'Vintage Coffee Table',
-    description: 'Mid-century modern coffee table in walnut wood. Some wear but structurally sound. Great character piece.',
-    startingPrice: 150,
-    currentPrice: 225,
-    images: ['https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400'],
-    endTime: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now
-    status: 'active',
-    categoryName: 'Home & Garden'
-  },
-  {
-    title: 'Signed Baseball Collection',
-    description: 'Collection of 5 baseballs signed by major league players. Authenticated with certificates.',
-    startingPrice: 500,
-    currentPrice: 750,
-    images: ['https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400'],
-    endTime: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days from now
-    status: 'active',
-    categoryName: 'Sports'
-  }
+// Sample auction images from Unsplash
+const sampleImages = [
+  'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1565193566173-7a0ee3dbe261?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1615397587950-3cfa537625fd?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=400&fit=crop',
+  'https://images.unsplash.com/photo-1589927986089-35812388d1f4?w=500&h=400&fit=crop'
 ];
 
-/**
- * Connect to MongoDB and seed the database with sample data
- */
-async function seedDatabase() {
-  try {
-    console.log('🌱 Starting database seeding...');
+// Function to generate auction data
+const generateAuctionData = (sellers, categories) => {
+  const auctions = [];
+  const conditions = ['new', 'like-new', 'good', 'fair'];
+  const materials = [
+    ['ceramic', 'clay'],
+    ['wood', 'oak', 'mahogany'],
+    ['cotton', 'silk', 'wool'],
+    ['silver', 'gold', 'copper'],
+    ['glass', 'crystal'],
+    ['leather', 'suede']
+  ];
+
+  const auctionTitles = [
+    'Vintage Ceramic Vase with Blue Glaze',
+    'Hand-Carved Wooden Elephant Sculpture',
+    'Traditional Persian Rug - Authentic',
+    'Sterling Silver Handmade Bracelet',
+    'Blown Glass Art Bowl - Multicolor',
+    'Leather Journal with Hand-Tooled Cover',
+    'Ceramic Tea Set - 6 Pieces',
+    'Wooden Chess Set - Hand Carved',
+    'Silk Scarf with Traditional Patterns',
+    'Copper Wall Art - Abstract Design',
+    'Crystal Pendant Necklace',
+    'Handwoven Wool Blanket',
+    'Ceramic Planter Set',
+    'Wooden Serving Tray - Rustic',
+    'Embroidered Wall Hanging',
+    'Silver Ring with Natural Stone',
+    'Glass Candle Holders - Set of 3',
+    'Leather Wallet - Handstitched',
+    'Ceramic Coffee Mug Collection',
+    'Carved Wooden Bowl Set'
+  ];
+
+  const descriptions = [
+    'A beautiful piece showcasing traditional craftsmanship and attention to detail.',
+    'Expertly crafted by skilled artisans using time-honored techniques.',
+    'This unique item represents the finest in traditional handicraft artistry.',
+    'Handmade with love and care, perfect for collectors and enthusiasts.',
+    'A stunning example of cultural heritage preserved through skilled craftsmanship.',
+    'Meticulously created using authentic methods passed down through generations.',
+    'This exceptional piece combines functionality with artistic beauty.',
+    'Crafted with premium materials and finished to the highest standards.',
+    'A rare find that showcases the beauty of traditional handmade artistry.',
+    'Perfect for those who appreciate authentic, handcrafted items.'
+  ];
+
+  for (let i = 0; i < 25; i++) {
+    const seller = sellers[Math.floor(Math.random() * sellers.length)];
+    const category = categories[Math.floor(Math.random() * categories.length)];
+    const startingPrice = Math.floor(Math.random() * 500) + 25;
+    const additionalBids = Math.floor(Math.random() * 15);
+    const currentPrice = startingPrice + (additionalBids * Math.floor(Math.random() * 25));
     
-    // Connect to MongoDB
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/bidcraft';
-    await mongoose.connect(mongoUri);
-    console.log('✅ Connected to MongoDB');
-
-    // Clear existing data
-    console.log('🗑️ Clearing existing data...');
-    await User.deleteMany({});
-    await Auction.deleteMany({});
-    await Category.deleteMany({});
-    await Bid.deleteMany({});
-    console.log('✅ Existing data cleared');
-
-    // Create categories
-    console.log('📂 Creating categories...');
-    const createdCategories = await Category.insertMany(sampleCategories);
-    console.log(`✅ Created ${createdCategories.length} categories`);
-
-    // Create users with hashed passwords
-    console.log('👥 Creating users...');
-    const usersWithHashedPasswords = await Promise.all(
-      sampleUsers.map(async (user) => ({
-        ...user,
-        password: await bcrypt.hash(user.password, 10)
-      }))
-    );
-    const createdUsers = await User.insertMany(usersWithHashedPasswords);
-    console.log(`✅ Created ${createdUsers.length} users`);
-
-    // Create auctions with category and seller references
-    console.log('🏷️ Creating auctions...');
-    const auctionsWithRefs = sampleAuctions.map((auction, index) => ({
-      ...auction,
-      category: createdCategories.find(cat => cat.name === auction.categoryName)._id,
-      seller: createdUsers[index % createdUsers.length]._id
-    }));
+    // Random time for auction end (some ended, some active, some future)
+    const now = new Date();
+    const startTime = new Date(now.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000); // Up to 7 days ago
+    const duration = (Math.floor(Math.random() * 7) + 1) * 24 * 60 * 60 * 1000; // 1-7 days
+    const endTime = new Date(startTime.getTime() + duration);
     
-    const createdAuctions = await Auction.insertMany(auctionsWithRefs);
-    console.log(`✅ Created ${createdAuctions.length} auctions`);
-
-    // Create sample bids for each auction
-    console.log('💰 Creating sample bids...');
-    const sampleBids = [];
-    
-    createdAuctions.forEach((auction) => {
-      const bidCount = Math.floor(Math.random() * 3) + 1; // 1-3 bids per auction
-      const bidIncrement = (auction.currentPrice - auction.startingPrice) / bidCount;
-      
-      for (let i = 0; i < bidCount; i++) {
-        const bidder = createdUsers[Math.floor(Math.random() * createdUsers.length)];
-        // Don't let seller bid on own auction
-        if (bidder._id.toString() !== auction.seller.toString()) {
-          sampleBids.push({
-            auction: auction._id,
-            bidder: bidder._id,
-            amount: auction.startingPrice + (bidIncrement * (i + 1)),
-            timestamp: new Date(Date.now() - (bidCount - i) * 60 * 60 * 1000) // Stagger bid times
-          });
-        }
-      }
-    });
-
-    if (sampleBids.length > 0) {
-      await Bid.insertMany(sampleBids);
-      console.log(`✅ Created ${sampleBids.length} sample bids`);
+    // Determine status based on timing
+    let status = 'active';
+    if (startTime > now) {
+      status = 'scheduled';
+    } else if (endTime < now) {
+      status = Math.random() > 0.7 ? 'sold' : 'ended';
     }
 
-    console.log('\n🎉 Database seeding completed successfully!');
-    console.log('\n📊 Summary:');
-    console.log(`   Categories: ${createdCategories.length}`);
-    console.log(`   Users: ${createdUsers.length}`);
-    console.log(`   Auctions: ${createdAuctions.length}`);
-    console.log(`   Bids: ${sampleBids.length}`);
-    
-    console.log('\n🔐 Test User Credentials:');
-    sampleUsers.forEach(user => {
-      console.log(`   Email: ${user.email} | Password: ${user.password}`);
+    auctions.push({
+      title: auctionTitles[i % auctionTitles.length] + ` #${i + 1}`,
+      description: descriptions[Math.floor(Math.random() * descriptions.length)] + ' ' + 
+                  descriptions[Math.floor(Math.random() * descriptions.length)],
+      category: category._id,
+      images: [{
+        url: sampleImages[Math.floor(Math.random() * sampleImages.length)],
+        alt: auctionTitles[i % auctionTitles.length]
+      }],
+      startingPrice: startingPrice,
+      currentPrice: currentPrice,
+      reservePrice: startingPrice + Math.floor(Math.random() * 100),
+      startTime: startTime,
+      endTime: endTime,
+      duration: duration,
+      seller: seller._id,
+      condition: conditions[Math.floor(Math.random() * conditions.length)],
+      materials: materials[Math.floor(Math.random() * materials.length)],
+      origin: {
+        country: ['USA', 'India', 'Mexico', 'Peru', 'Morocco', 'Turkey'][Math.floor(Math.random() * 6)],
+        artisan: seller.name
+      },
+      tags: ['handmade', 'authentic', 'traditional', 'unique'].slice(0, Math.floor(Math.random() * 4) + 1),
+      status: status,
+      totalBids: additionalBids,
+      views: Math.floor(Math.random() * 200) + 10,
+      featured: Math.random() > 0.7, // 30% chance of being featured
+      shipping: {
+        method: 'standard',
+        cost: Math.floor(Math.random() * 20) + 5,
+        freeShipping: Math.random() > 0.6,
+        international: true,
+        handlingTime: Math.floor(Math.random() * 3) + 1
+      }
     });
-
-  } catch (error) {
-    console.error('❌ Error seeding database:', error);
-  } finally {
-    await mongoose.disconnect();
-    console.log('👋 Disconnected from MongoDB');
-    process.exit();
   }
-}
 
-// Run the seeder if this file is executed directly
+  return auctions;
+};
+
+// Function to generate bid data
+const generateBidData = (auctions, buyers) => {
+  const bids = [];
+  
+  auctions.forEach(auction => {
+    if (auction.totalBids > 0) {
+      for (let i = 0; i < auction.totalBids; i++) {
+        const bidder = buyers[Math.floor(Math.random() * buyers.length)];
+        const bidAmount = auction.startingPrice + (i + 1) * Math.floor(Math.random() * 25) + 5;
+        
+        bids.push({
+          auction: auction._id,
+          bidder: bidder._id,
+          amount: bidAmount,
+          bidTime: new Date(auction.startTime.getTime() + Math.random() * (auction.endTime - auction.startTime)),
+          isMaxBid: Math.random() > 0.8, // 20% chance of being max bid
+          status: i === auction.totalBids - 1 ? 'winning' : 'outbid'
+        });
+      }
+    }
+  });
+  
+  return bids;
+};
+
+// Database connection
+const connectDB = async () => {
+  try {
+    const mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/bidcraft';
+    await mongoose.connect(mongoURI);
+    console.log('✅ MongoDB connected for seeding');
+  } catch (error) {
+    console.error('❌ MongoDB connection failed:', error);
+    process.exit(1);
+  }
+};
+
+// Clear existing data
+const clearDatabase = async () => {
+  try {
+    await Bid.deleteMany({});
+    await Auction.deleteMany({});
+    await Category.deleteMany({});
+    await User.deleteMany({});
+    console.log('🗑️  Cleared existing data');
+  } catch (error) {
+    console.error('Error clearing database:', error);
+    throw error;
+  }
+};
+
+// Seed categories
+const seedCategories = async () => {
+  try {
+    const categories = await Category.insertMany(categoriesData);
+    console.log(`✅ Seeded ${categories.length} categories`);
+    return categories;
+  } catch (error) {
+    console.error('Error seeding categories:', error);
+    throw error;
+  }
+};
+
+// Seed users
+const seedUsers = async () => {
+  try {
+    // Hash passwords for all users
+    const hashedUsers = await Promise.all(
+      usersData.map(async (user) => ({
+        ...user,
+        password: await bcrypt.hash(user.password, 12)
+      }))
+    );
+    
+    const users = await User.insertMany(hashedUsers);
+    console.log(`✅ Seeded ${users.length} users`);
+    return users;
+  } catch (error) {
+    console.error('Error seeding users:', error);
+    throw error;
+  }
+};
+
+// Seed auctions
+const seedAuctions = async (sellers, categories) => {
+  try {
+    const auctionData = generateAuctionData(sellers, categories);
+    const auctions = await Auction.insertMany(auctionData);
+    console.log(`✅ Seeded ${auctions.length} auctions`);
+    return auctions;
+  } catch (error) {
+    console.error('Error seeding auctions:', error);
+    throw error;
+  }
+};
+
+// Seed bids
+const seedBids = async (auctions, buyers) => {
+  try {
+    const bidData = generateBidData(auctions, buyers);
+    if (bidData.length > 0) {
+      const bids = await Bid.insertMany(bidData);
+      console.log(`✅ Seeded ${bids.length} bids`);
+      return bids;
+    }
+    console.log('✅ No bids to seed');
+    return [];
+  } catch (error) {
+    console.error('Error seeding bids:', error);
+    throw error;
+  }
+};
+
+// Update category auction counts
+const updateCategoryCounts = async () => {
+  try {
+    const categories = await Category.find({});
+    
+    for (const category of categories) {
+      const totalAuctions = await Auction.countDocuments({ category: category._id });
+      const activeAuctions = await Auction.countDocuments({ 
+        category: category._id, 
+        status: { $in: ['active', 'scheduled'] }
+      });
+      
+      await Category.findByIdAndUpdate(category._id, {
+        totalAuctions,
+        activeAuctions
+      });
+    }
+    
+    console.log('✅ Updated category auction counts');
+  } catch (error) {
+    console.error('Error updating category counts:', error);
+    throw error;
+  }
+};
+
+// Main seeding function
+const seedDatabase = async () => {
+  console.log('🌱 Starting database seeding...\n');
+  
+  try {
+    await connectDB();
+    
+    // Clear existing data
+    await clearDatabase();
+    
+    // Seed data in order (respecting dependencies)
+    console.log('\n📦 Seeding categories...');
+    const categories = await seedCategories();
+    
+    console.log('\n👥 Seeding users...');
+    const users = await seedUsers();
+    
+    const sellers = users.filter(user => user.role === 'seller');
+    const buyers = users.filter(user => user.role === 'buyer');
+    
+    console.log('\n🏛️  Seeding auctions...');
+    const auctions = await seedAuctions(sellers, categories);
+    
+    console.log('\n💰 Seeding bids...');
+    await seedBids(auctions, buyers);
+    
+    console.log('\n📊 Updating category counts...');
+    await updateCategoryCounts();
+    
+    console.log('\n🎉 Database seeding completed successfully!');
+    console.log('\n📈 Seeding Summary:');
+    console.log(`   Categories: ${categories.length}`);
+    console.log(`   Users: ${users.length} (${sellers.length} sellers, ${buyers.length} buyers, 1 admin)`);
+    console.log(`   Auctions: ${auctions.length}`);
+    console.log('\n💡 You can now log in with:');
+    console.log('   Seller: maria.santos@example.com / password123');
+    console.log('   Buyer: alice.cooper@example.com / password123');
+    console.log('   Admin: admin@bidcraft.com / admin123');
+    
+  } catch (error) {
+    console.error('\n❌ Seeding failed:', error);
+  } finally {
+    await mongoose.connection.close();
+    console.log('\n🔌 Database connection closed');
+    process.exit(0);
+  }
+};
+
+// Run seeding if called directly
 if (require.main === module) {
   seedDatabase();
 }
 
-module.exports = { seedDatabase };
+module.exports = {
+  seedDatabase,
+  categoriesData,
+  usersData
+};

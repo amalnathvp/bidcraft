@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 import { NotificationData } from '../types';
 
+// Re-export auction hooks
+export * from './useAuctions';
+export * from './useCategories';
+
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
 

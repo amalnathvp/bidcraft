@@ -149,8 +149,7 @@ const SignupPage: React.FC<SignupPageProps> = ({ onNavigate, onSignup }) => {
     try {
       // Use auth context register method
       await register({
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        name: `${formData.firstName} ${formData.lastName}`,
         email: formData.email,
         password: formData.password,
         role: formData.accountType === 'seller' ? 'seller' : 'buyer'

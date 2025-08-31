@@ -75,6 +75,42 @@ class ApiService {
   }
 
   /**
+   * POST request with FormData (for file uploads)
+   */
+  async postFormData(endpoint: string, formData: FormData) {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    // Set up config without Content-Type for FormData
+    const config: RequestInit = {
+      method: 'POST',
+      body: formData,
+    };
+
+    // Add authentication token if available
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers = {
+        Authorization: `Bearer ${token}`,
+      };
+    }
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      // Handle non-successful responses
+      if (!response.ok) {
+        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+      }
+
+      return data;
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Simple PUT request with data
    */
   async put(endpoint: string, data: any) {

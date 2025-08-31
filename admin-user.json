@@ -1,0 +1,8 @@
+{
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@bidcraft.com",
+  "password": "admin123",
+  "accountType": "seller",
+  "role": "admin"
+}

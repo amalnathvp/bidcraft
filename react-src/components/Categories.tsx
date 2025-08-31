@@ -1,51 +1,55 @@
 import React from 'react';
-import { Category } from '../types';
+import { useCategories } from '../hooks';
+import { transformCategoryForDisplay } from '../utils/auctionUtils';
 
 const Categories: React.FC = () => {
-  const categories: Category[] = [
-    {
-      id: '1',
-      name: 'Pottery & Ceramics',
-      description: 'Handcrafted bowls, vases, and decorative pieces',
-      itemCount: 450,
-      icon: 'fas fa-palette'
-    },
-    {
-      id: '2',
-      name: 'Textiles & Fabrics',
-      description: 'Traditional weaving, embroidery, and tapestries',
-      itemCount: 320,
-      icon: 'fas fa-cut'
-    },
-    {
-      id: '3',
-      name: 'Wood Crafts',
-      description: 'Carved sculptures, furniture, and decorative items',
-      itemCount: 280,
-      icon: 'fas fa-tree'
-    },
-    {
-      id: '4',
-      name: 'Jewelry & Accessories',
-      description: 'Handmade jewelry and personal accessories',
-      itemCount: 190,
-      icon: 'fas fa-gem'
-    },
-    {
-      id: '5',
-      name: 'Metal Works',
-      description: 'Forged items, sculptures, and decorative pieces',
-      itemCount: 150,
-      icon: 'fas fa-hammer'
-    },
-    {
-      id: '6',
-      name: 'Art & Paintings',
-      description: 'Original artworks and traditional paintings',
-      itemCount: 220,
-      icon: 'fas fa-brush'
-    }
-  ];
+  const { categories, loading, error } = useCategories();
+
+  // Debug logging
+  console.log('Categories Debug:', { categories, loading, error });
+
+  if (loading) {
+    return (
+      <section id="categories" className="categories">
+        <div className="container">
+          <div className="section-header">
+            <h2>Browse by Category</h2>
+            <p>Explore our diverse collection of handicrafts</p>
+          </div>
+          <div className="categories-grid">
+            {/* Loading skeleton */}
+            {[...Array(6)].map((_, index) => (
+              <div key={index} className="category-card loading">
+                <div className="category-icon skeleton"></div>
+                <div className="skeleton-text"></div>
+                <div className="skeleton-text"></div>
+                <div className="skeleton-text"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section id="categories" className="categories">
+        <div className="container">
+          <div className="section-header">
+            <h2>Browse by Category</h2>
+            <p>Explore our diverse collection of handicrafts</p>
+          </div>
+          <div className="error-message">
+            <p>Failed to load categories: {error}</p>
+            <button onClick={() => window.location.reload()} className="btn-primary">
+              Try Again
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section id="categories" className="categories">
@@ -55,16 +59,29 @@ const Categories: React.FC = () => {
           <p>Explore our diverse collection of handicrafts</p>
         </div>
         <div className="categories-grid">
-          {categories.map((category) => (
-            <div key={category.id} className="category-card">
-              <div className="category-icon">
-                <i className={category.icon}></i>
-              </div>
-              <h3>{category.name}</h3>
-              <p>{category.description}</p>
-              <span className="item-count">{category.itemCount}+ items</span>
+          {categories
+            .filter(category => category.featured && category.isActive)
+            .slice(0, 6) // Limit to 6 featured categories for the homepage
+            .map((category) => {
+              const displayCategory = transformCategoryForDisplay(category);
+              return (
+                <div key={category._id} className="category-card">
+                  <div className="category-icon">
+                    <i className={category.icon || 'fas fa-tag'}></i>
+                  </div>
+                  <h3>{category.name}</h3>
+                  <p>{category.description || 'Explore beautiful handcrafted items'}</p>
+                  <span className="item-count">{displayCategory.itemCount}+ items</span>
+                </div>
+              );
+            })}
+          
+          {/* Show message if no featured categories */}
+          {categories.filter(cat => cat.featured && cat.isActive).length === 0 && (
+            <div className="no-categories">
+              <p>No featured categories available at the moment.</p>
             </div>
-          ))}
+          )}
         </div>
       </div>
     </section>
