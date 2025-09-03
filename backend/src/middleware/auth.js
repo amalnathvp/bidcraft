@@ -9,6 +9,25 @@ const protect = async (req, res, next) => {
     // Get token from header
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
+      console.log('🔐 Auth middleware: Token extracted from Authorization header');
+      console.log('📝 Full Authorization header:', req.headers.authorization);
+      console.log('🔑 Extracted token length:', token ? token.length : 0);
+      console.log('🔑 Token preview:', token ? token.substring(0, 30) + '...' : 'null');
+      
+      // Check if token contains any unexpected characters
+      if (token && !/^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$/.test(token)) {
+        console.log('⚠️ Token format looks suspicious - not standard JWT format');
+        console.log('🔍 Token character analysis:', {
+          hasSpaces: token.includes(' '),
+          hasNewlines: token.includes('\n'),
+          hasCarriageReturn: token.includes('\r'),
+          startsWithBearer: token.startsWith('Bearer'),
+          actualLength: token.length
+        });
+      }
+    } else {
+      console.log('❌ No Authorization header or invalid format');
+      console.log('📝 Available headers:', Object.keys(req.headers));
     }
 
     if (!token) {
@@ -20,19 +39,29 @@ const protect = async (req, res, next) => {
 
     try {
       // Verify token
+      console.log('🔐 Auth middleware: Verifying token...');
+      console.log('🔑 Token preview:', token.substring(0, 20) + '...');
+      console.log('🔒 JWT_SECRET exists:', !!process.env.JWT_SECRET);
+      
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      console.log('✅ Token verification successful, user ID:', decoded.id);
       
       // Get user from token
       const user = await User.findById(decoded.id).select('-password');
+      console.log('👤 User lookup result:', user ? 'Found' : 'Not found');
       
       if (!user) {
+        console.log('❌ User not found for ID:', decoded.id);
         return res.status(401).json({
           success: false,
           message: 'Token is not valid. User not found.'
         });
       }
 
+      console.log('👤 User found:', user.name, 'Role:', user.role, 'Active:', user.isActive);
+
       if (!user.isActive) {
+        console.log('❌ User account is inactive');
         return res.status(401).json({
           success: false,
           message: 'Account has been deactivated.'
@@ -40,8 +69,11 @@ const protect = async (req, res, next) => {
       }
 
       req.user = user;
+      console.log('✅ Auth middleware: User authenticated successfully');
       next();
     } catch (error) {
+      console.log('❌ JWT verification error:', error.message);
+      console.log('❌ Error type:', error.name);
       return res.status(401).json({
         success: false,
         message: 'Token is not valid.'

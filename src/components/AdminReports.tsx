@@ -7,7 +7,7 @@ interface AdminReportsProps {
 
 interface Report {
   _id: string;
-  type: 'auction' | 'user' | 'bid';
+  type: 'auction' | 'user' | 'bid' | 'dispute';
   reportedItem: {
     _id: string;
     title?: string;
@@ -21,10 +21,18 @@ interface Report {
   };
   reason: string;
   description: string;
-  status: 'pending' | 'resolved' | 'dismissed';
+  status: 'pending' | 'resolved' | 'dismissed' | 'escalated';
+  priority: 'low' | 'medium' | 'high' | 'urgent';
   createdAt: string;
   resolvedAt?: string;
   resolution?: string;
+  disputeValue?: number;
+  involvedParties?: Array<{
+    _id: string;
+    name: string;
+    email: string;
+    role: 'buyer' | 'seller';
+  }>;
 }
 
 const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
@@ -61,6 +69,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
               reason: 'inappropriate_content',
               description: 'This item appears to be mass-produced, not handcrafted as claimed.',
               status: 'pending',
+              priority: 'high',
               createdAt: '2025-08-30T14:30:00Z'
             },
             {
@@ -79,6 +88,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
               reason: 'fraudulent_activity',
               description: 'This seller is using stolen images and fake credentials.',
               status: 'pending',
+              priority: 'urgent',
               createdAt: '2025-08-29T16:45:00Z'
             },
             {
@@ -97,9 +107,78 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
               reason: 'misleading_description',
               description: 'Item condition does not match the description provided.',
               status: 'resolved',
+              priority: 'medium',
               createdAt: '2025-08-28T09:15:00Z',
               resolvedAt: '2025-08-29T10:30:00Z',
               resolution: 'Contacted seller to update description. Warning issued.'
+            },
+            {
+              _id: '4',
+              type: 'dispute',
+              reportedItem: {
+                _id: 'auction3',
+                title: 'Handmade Wooden Chair'
+              },
+              reporter: {
+                _id: 'buyer1',
+                firstName: 'Michael',
+                lastName: 'Johnson',
+                email: 'michael@example.com'
+              },
+              reason: 'item_not_as_described',
+              description: 'Buyer claims item arrived damaged and seller refuses refund. Auction value $350.',
+              status: 'escalated',
+              priority: 'high',
+              createdAt: '2025-08-31T11:20:00Z',
+              disputeValue: 350,
+              involvedParties: [
+                {
+                  _id: 'buyer1',
+                  name: 'Michael Johnson',
+                  email: 'michael@example.com',
+                  role: 'buyer'
+                },
+                {
+                  _id: 'seller1',
+                  name: 'Woodcraft Studio',
+                  email: 'studio@woodcraft.com',
+                  role: 'seller'
+                }
+              ]
+            },
+            {
+              _id: '5',
+              type: 'dispute',
+              reportedItem: {
+                _id: 'auction4',
+                title: 'Vintage Camera'
+              },
+              reporter: {
+                _id: 'seller2',
+                firstName: 'Sarah',
+                lastName: 'Davis',
+                email: 'sarah@example.com'
+              },
+              reason: 'payment_dispute',
+              description: 'Buyer won auction but payment method was declined. Seller requesting compensation.',
+              status: 'pending',
+              priority: 'medium',
+              createdAt: '2025-08-30T08:45:00Z',
+              disputeValue: 125,
+              involvedParties: [
+                {
+                  _id: 'buyer2',
+                  name: 'Tom Wilson',
+                  email: 'tom@example.com',
+                  role: 'buyer'
+                },
+                {
+                  _id: 'seller2',
+                  name: 'Sarah Davis',
+                  email: 'sarah@example.com',
+                  role: 'seller'
+                }
+              ]
             }
           ];
           
@@ -166,6 +245,17 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
       case 'pending': return '#F59E0B';
       case 'resolved': return '#10B981';
       case 'dismissed': return '#6B7280';
+      case 'escalated': return '#DC2626';
+      default: return '#6B7280';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return '#DC2626';
+      case 'high': return '#F59E0B';
+      case 'medium': return '#0EA5E9';
+      case 'low': return '#10B981';
       default: return '#6B7280';
     }
   };
@@ -175,6 +265,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
       case 'auction': return '🏷️';
       case 'user': return '👤';
       case 'bid': return '💰';
+      case 'dispute': return '⚖️';
       default: return '📋';
     }
   };
@@ -186,6 +277,9 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
       'misleading_description': 'Misleading Description',
       'copyright_violation': 'Copyright Violation',
       'spam': 'Spam',
+      'item_not_as_described': 'Item Not As Described',
+      'payment_dispute': 'Payment Dispute',
+      'shipping_issue': 'Shipping Issue',
       'other': 'Other'
     };
     return reasons[reason] || reason;
@@ -229,6 +323,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
             >
               <option value="all">All Status</option>
               <option value="pending">Pending</option>
+              <option value="escalated">Escalated</option>
               <option value="resolved">Resolved</option>
               <option value="dismissed">Dismissed</option>
             </select>
@@ -241,6 +336,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
               <option value="auction">Auction Reports</option>
               <option value="user">User Reports</option>
               <option value="bid">Bid Reports</option>
+              <option value="dispute">Disputes</option>
             </select>
           </div>
 
@@ -248,6 +344,14 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
             <div className="stat-item urgent">
               <span className="count">{reports.filter(r => r.status === 'pending').length}</span>
               <span className="label">Pending</span>
+            </div>
+            <div className="stat-item urgent">
+              <span className="count">{reports.filter(r => r.status === 'escalated').length}</span>
+              <span className="label">Escalated</span>
+            </div>
+            <div className="stat-item">
+              <span className="count">{reports.filter(r => r.type === 'dispute').length}</span>
+              <span className="label">Disputes</span>
             </div>
             <div className="stat-item">
               <span className="count">{reports.filter(r => r.status === 'resolved').length}</span>
@@ -259,14 +363,23 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
         {/* Reports List */}
         <div className="reports-list">
           {filteredReports.map(report => (
-            <div key={report._id} className={`report-card ${report.status}`}>
+            <div key={report._id} className={`report-card ${report.status} ${report.type}`}>
               <div className="report-header">
                 <div className="report-type">
                   <span className="type-icon">{getTypeIcon(report.type)}</span>
                   <span className="type-label">{report.type.charAt(0).toUpperCase() + report.type.slice(1)} Report</span>
+                  {report.type === 'dispute' && report.disputeValue && (
+                    <span className="dispute-value">💰 ${report.disputeValue}</span>
+                  )}
                 </div>
                 
-                <div className="report-status">
+                <div className="report-badges">
+                  <span 
+                    className="priority-badge"
+                    style={{ backgroundColor: getPriorityColor(report.priority) }}
+                  >
+                    {report.priority.toUpperCase()}
+                  </span>
                   <span 
                     className="status-indicator"
                     style={{ backgroundColor: getStatusColor(report.status) }}
@@ -285,6 +398,22 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                   <strong>Reported by:</strong> {report.reporter.firstName} {report.reporter.lastName} 
                   ({report.reporter.email})
                 </div>
+
+                {report.involvedParties && (
+                  <div className="involved-parties">
+                    <strong>Involved Parties:</strong>
+                    <div className="parties-list">
+                      {report.involvedParties.map(party => (
+                        <div key={party._id} className="party-item">
+                          <span className={`role-badge ${party.role}`}>
+                            {party.role.charAt(0).toUpperCase() + party.role.slice(1)}
+                          </span>
+                          {party.name} ({party.email})
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 
                 <div className="report-reason">
                   <strong>Reason:</strong> {getReasonLabel(report.reason)}
@@ -298,7 +427,7 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                   <strong>Reported:</strong> {new Date(report.createdAt).toLocaleString()}
                 </div>
 
-                {report.status !== 'pending' && report.resolvedAt && (
+                {report.status !== 'pending' && report.status !== 'escalated' && report.resolvedAt && (
                   <div className="resolution-info">
                     <div><strong>Resolved:</strong> {new Date(report.resolvedAt).toLocaleString()}</div>
                     {report.resolution && (
@@ -308,17 +437,40 @@ const AdminReports: React.FC<AdminReportsProps> = ({ onNavigate }) => {
                 )}
               </div>
 
-              {report.status === 'pending' && (
+              {(report.status === 'pending' || report.status === 'escalated') && (
                 <div className="report-actions">
-                  <button
-                    className="action-btn resolve"
-                    onClick={() => {
-                      setSelectedReport(report);
-                      setShowModal(true);
-                    }}
-                  >
-                    Take Action
-                  </button>
+                  {report.type === 'dispute' ? (
+                    <>
+                      <button
+                        className="action-btn mediate"
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setShowModal(true);
+                        }}
+                      >
+                        🤝 Mediate Dispute
+                      </button>
+                      <button
+                        className="action-btn refund"
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setShowModal(true);
+                        }}
+                      >
+                        💰 Process Refund
+                      </button>
+                    </>
+                  ) : (
+                    <button
+                      className="action-btn resolve"
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setShowModal(true);
+                      }}
+                    >
+                      Take Action
+                    </button>
+                  )}
                 </div>
               )}
             </div>

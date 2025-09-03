@@ -18,11 +18,13 @@ import BuyerDashboard from './components/BuyerDashboard';
 import LiveAuctions from './components/LiveAuctions';
 import AuctionDetail from './components/AuctionDetail';
 import ListNewItemPage from './components/ListNewItemPage';
-import AdminDashboard from './components/AdminDashboard';
-import AdminUserManagement from './components/AdminUserManagement';
-import AdminAuctionManagement from './components/AdminAuctionManagement';
-import AdminCategoryManagement from './components/AdminCategoryManagement';
-import AdminReports from './components/AdminReports';
+import AdminDashboard from './components/admin/AdminDashboard';
+import AdminAnalytics from './components/admin/AdminAnalytics';
+import AdminCommission from './components/admin/AdminCommission';
+import AdminFraud from './components/admin/AdminFraud';
+import AdminModeration from './components/admin/AdminModeration';
+import AdminDisputes from './components/admin/AdminDisputes';
+import AdminFeatured from './components/admin/AdminFeatured';
 import AdminRegistration from './components/AdminRegistration';
 import { useNotifications } from './hooks';
 import './App.css';
@@ -48,19 +50,43 @@ const AppContent: React.FC = () => {
   // Check URL for admin routes and set initial page
   useEffect(() => {
     const path = window.location.pathname;
+    console.log('🔍 Current path:', path);
     if (path.startsWith('/admin')) {
       const adminPath = path.split('/')[2] || 'dashboard';
-      // Only set admin page if user is authenticated and admin
-      if (user && user.role === 'admin') {
+      console.log('🔧 Admin path detected:', adminPath);
+      // Direct admin access without authentication check (development mode)
+      console.log('🔧 Dev Mode: Direct admin access to:', adminPath);
+      setCurrentPage(`admin-${adminPath}`);
+      
+      // Auto-login as admin if not already authenticated
+      if (!user) {
+        console.log('🚀 Auto-logging in as admin for development');
+        // You could add auto-login logic here if needed
+      }
+    } else {
+      console.log('🏠 Setting home page');
+      setCurrentPage('home');
+    }
+  }, []); // Remove user dependency to avoid redirects
+
+  // Handle browser back/forward buttons
+  useEffect(() => {
+    const handlePopstate = () => {
+      const path = window.location.pathname;
+      if (path.startsWith('/admin')) {
+        const adminPath = path.split('/')[2] || 'dashboard';
         setCurrentPage(`admin-${adminPath}`);
       } else {
-        // Redirect to login if not admin
-        setCurrentPage('login');
+        setCurrentPage('home');
       }
-    }
-  }, [user]); // Add user dependency to react to auth state changes
+    };
+
+    window.addEventListener('popstate', handlePopstate);
+    return () => window.removeEventListener('popstate', handlePopstate);
+  }, []);
 
   const handleNavigation = useCallback((page: string, data?: any) => {
+    console.log('🚀 Navigation triggered:', page, data);
     setCurrentPage(page);
     setNavigationData(data);
     
@@ -68,9 +94,11 @@ const AppContent: React.FC = () => {
     if (page.startsWith('admin-')) {
       const adminPath = page.replace('admin-', '');
       window.history.pushState({}, '', `/admin/${adminPath}`);
+      console.log('🌐 URL updated to:', `/admin/${adminPath}`);
     } else {
       // Reset URL for non-admin pages
       window.history.pushState({}, '', '/');
+      console.log('🌐 URL updated to:', '/');
     }
   }, []);
 
@@ -93,6 +121,7 @@ const AppContent: React.FC = () => {
   }, [addNotification]);
 
   const renderPage = () => {
+    console.log('🎭 Rendering page:', currentPage);
     switch (currentPage) {
       case 'auctions':
         return <AuctionsPage />;
@@ -137,45 +166,40 @@ const AppContent: React.FC = () => {
       
       // Admin Routes - Authentication handled in URL effect
       case 'admin-dashboard':
+        console.log('🎯 Rendering AdminDashboard component');
         return <AdminDashboard onNavigate={handleNavigation} />;
-      case 'admin-users':
-        return <AdminUserManagement onNavigate={handleNavigation} />;
-      case 'admin-auctions':
-        return <AdminAuctionManagement onNavigate={handleNavigation} />;
-      case 'admin-categories':
-        return <AdminCategoryManagement onNavigate={handleNavigation} />;
-      case 'admin-reports':
-        return <AdminReports onNavigate={handleNavigation} />;
       case 'admin-analytics':
-        return (
-          <div className="admin-analytics">
-            <div className="container">
-              <h1>Analytics (Coming Soon)</h1>
-              <p>Advanced analytics and reporting features will be available here.</p>
-              <button 
-                className="btn-primary"
-                onClick={() => handleNavigation('admin-dashboard')}
-              >
-                ← Back to Dashboard
-              </button>
-            </div>
-          </div>
-        );
-      case 'admin-settings':
-        return (
-          <div className="admin-settings">
-            <div className="container">
-              <h1>System Settings (Coming Soon)</h1>
-              <p>Platform configuration and system settings will be available here.</p>
-              <button 
-                className="btn-primary"
-                onClick={() => handleNavigation('admin-dashboard')}
-              >
-                ← Back to Dashboard
-              </button>
-            </div>
-          </div>
-        );
+        console.log('� Rendering AdminAnalytics component');
+        return <AdminAnalytics onNavigate={handleNavigation} />;
+      case 'admin-commission':
+        console.log('� Rendering AdminCommission component');
+        return <AdminCommission onNavigate={handleNavigation} />;
+      case 'admin-fraud':
+        console.log('�️ Rendering AdminFraud component');
+        return <AdminFraud onNavigate={handleNavigation} />;
+      case 'admin-moderation':
+        console.log('� Rendering AdminModeration component');
+        return <AdminModeration onNavigate={handleNavigation} />;
+      case 'admin-disputes':
+        console.log('⚖️ Rendering AdminDisputes component');
+        return <AdminDisputes onNavigate={handleNavigation} />;
+      case 'admin-featured':
+        console.log('⭐ Rendering AdminFeatured component');
+        return <AdminFeatured onNavigate={handleNavigation} />;
+      
+      // Legacy admin routes - keeping for compatibility
+      case 'admin-users':
+        console.log('👥 Redirecting to admin dashboard');
+        return <AdminDashboard onNavigate={handleNavigation} />;
+      case 'admin-auctions':
+        console.log('🔨 Redirecting to admin moderation');
+        return <AdminModeration onNavigate={handleNavigation} />;
+      case 'admin-categories':
+        console.log('📂 Redirecting to admin dashboard');
+        return <AdminDashboard onNavigate={handleNavigation} />;
+      case 'admin-reports':
+        console.log('📊 Redirecting to admin analytics');
+        return <AdminAnalytics onNavigate={handleNavigation} />;
       
       case 'home':
       default:

@@ -89,13 +89,43 @@ class AuthService {
   }
 
   /**
+   * Development admin login bypass (no password required)
+   * Only works in development environment
+   */
+  async devAdminLogin(): Promise<AuthResponse> {
+    try {
+      console.log('🚀 Dev Admin: Instant admin login');
+      const response = await apiService.post('/auth/dev-admin', {});
+      
+      // Store auth data if login successful
+      if (response.success && response.token) {
+        this.storeAuthData(response.token, response.user);
+        console.log('✅ Dev Admin: Login successful, user role:', response.user.role);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Dev admin login failed:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get current user data from server
    * Validates stored token
    */
   async getCurrentUser(): Promise<User | null> {
     try {
       const token = localStorage.getItem('authToken');
-      if (!token) {
+      console.log('🔍 Get Current User: Token from storage:', token);
+      console.log('🔍 Get Current User: Token type:', typeof token);
+      
+      if (!token || token === 'null' || token.trim() === '') {
+        console.log('⚠️ Get Current User: No valid token available');
+        if (token === 'null') {
+          console.log('🧹 Get Current User: Cleaning "null" string from localStorage');
+          this.logout();
+        }
         return null;
       }
 
@@ -120,15 +150,50 @@ class AuthService {
    * Logout user and clear stored data
    */
   logout(): void {
+    console.log('🚪 Auth Service: Logging out and clearing storage');
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    console.log('✅ Auth Service: Storage cleared');
+  }
+
+  /**
+   * Debug method to check localStorage state
+   */
+  debugStorage(): void {
+    console.log('🔍 Auth Debug: localStorage state');
+    const token = localStorage.getItem('authToken');
+    const user = localStorage.getItem('user');
+    console.log('🔑 Token:', token);
+    console.log('🔑 Token type:', typeof token);
+    console.log('🔑 Token length:', token ? token.length : 0);
+    console.log('👤 User:', user);
+    
+    if (token === 'null') {
+      console.log('❌ Found "null" string - this is the problem!');
+    }
   }
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    return !!localStorage.getItem('authToken');
+    const token = localStorage.getItem('authToken');
+    console.log('🔍 Auth Service: Checking authentication');
+    console.log('🔍 Auth Service: Token from storage:', token);
+    console.log('🔍 Auth Service: Token type:', typeof token);
+    
+    // Return true only if we have a valid token (not null, not "null" string)
+    const isValid = !!(token && token !== 'null' && token.trim() !== '');
+    console.log('🔍 Auth Service: Is authenticated:', isValid);
+    
+    if (token === 'null') {
+      console.log('🧹 Auth Service: Found "null" string, cleaning localStorage');
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('user');
+      return false;
+    }
+    
+    return isValid;
   }
 
   /**
@@ -152,8 +217,26 @@ class AuthService {
    * Private method to store authentication data
    */
   private storeAuthData(token: string, user: User): void {
-    localStorage.setItem('authToken', token);
+    console.log('💾 Storing auth data');
+    console.log('🔑 Token to store - length:', token.length);
+    console.log('🔑 Token to store - preview:', token.substring(0, 30) + '...');
+    
+    // Validate token before storing
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      console.error('❌ Attempting to store invalid JWT token - wrong number of parts:', parts.length);
+      throw new Error('Invalid JWT token format');
+    }
+    
+    // Clean the token (remove any whitespace)
+    const cleanToken = token.trim();
+    if (cleanToken !== token) {
+      console.warn('⚠️ Token had whitespace, cleaned it');
+    }
+    
+    localStorage.setItem('authToken', cleanToken);
     localStorage.setItem('user', JSON.stringify(user));
+    console.log('✅ Auth data stored successfully');
   }
 }
 

@@ -42,10 +42,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
             <button 
-              onClick={() => {
-                console.log('🔥 Manage Users clicked - navigating to admin-users');
-                onNavigate('admin-users');
-              }} 
+              onClick={() => onNavigate('admin-users')} 
               style={{ 
                 padding: '15px 20px', 
                 background: '#007bff', 
@@ -61,10 +58,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             </button>
             
             <button 
-              onClick={() => {
-                console.log('🔥 Manage Auctions clicked - navigating to admin-auctions');
-                onNavigate('admin-auctions');
-              }} 
+              onClick={() => onNavigate('admin-auctions')} 
               style={{ 
                 padding: '15px 20px', 
                 background: '#28a745', 
@@ -80,10 +74,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             </button>
             
             <button 
-              onClick={() => {
-                console.log('🔥 Manage Categories clicked - navigating to admin-categories');
-                onNavigate('admin-categories');
-              }} 
+              onClick={() => onNavigate('admin-categories')} 
               style={{ 
                 padding: '15px 20px', 
                 background: '#17a2b8', 
@@ -99,10 +90,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
             </button>
             
             <button 
-              onClick={() => {
-                console.log('🔥 View Reports clicked - navigating to admin-reports');
-                onNavigate('admin-reports');
-              }} 
+              onClick={() => onNavigate('admin-reports')} 
               style={{ 
                 padding: '15px 20px', 
                 background: '#ffc107', 

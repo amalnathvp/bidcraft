@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../styles/ListNewItemPage.css';
+import { auctionService } from '../services/auctionService';
 
 interface SellerDashboardProps {
   onNavigate?: (page: string) => void;
@@ -782,21 +783,14 @@ const QuickListingModal: React.FC<QuickListingModalProps> = ({ onClose }) => {
       submitData.append('startTime', startTime.toISOString());
       submitData.append('endTime', endTime.toISOString());
 
-      const response = await fetch('/api/auctions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: submitData
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create auction');
+      console.log('🚀 Creating auction using auctionService...');
+      const result = await auctionService.createAuction(submitData);
+      
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create auction');
       }
 
-      const auction = await response.json();
-      console.log('Auction created successfully:', auction);
+      console.log('✅ Auction created successfully:', result);
       
       // Show success message and close modal
       alert('Auction created successfully! It will be reviewed and published shortly.');

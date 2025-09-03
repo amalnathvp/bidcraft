@@ -135,6 +135,8 @@ const createAuction = asyncHandler(async (req, res, next) => {
   // Check validation errors
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('❌ Validation errors found:', errors.array());
+    console.log('📝 Detailed validation errors:', JSON.stringify(errors.array(), null, 2));
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
@@ -146,37 +148,59 @@ const createAuction = asyncHandler(async (req, res, next) => {
     // Handle image uploads first
     let images = [];
     if (req.files && req.files.length > 0) {
-      const cloudinary = require('cloudinary').v2;
-      
-      const uploadPromises = req.files.map(file => {
-        return new Promise((resolve, reject) => {
-          const uploadStream = cloudinary.uploader.upload_stream(
-            {
-              folder: 'bidcraft/auctions',
-              transformation: [
-                { width: 800, height: 600, crop: 'fill' },
-                { quality: 'auto' },
-                { fetch_format: 'auto' }
-              ],
-              resource_type: 'image'
-            },
-            (error, result) => {
-              if (error) {
-                reject(error);
-              } else {
-                resolve({
-                  url: result.secure_url,
-                  publicId: result.public_id,
-                  alt: `${req.body.title} image`
-                });
-              }
-            }
-          );
-          uploadStream.end(file.buffer);
-        });
-      });
+      // Check if Cloudinary is properly configured
+      const isCloudinaryConfigured = 
+        process.env.CLOUDINARY_CLOUD_NAME && 
+        process.env.CLOUDINARY_API_KEY && 
+        process.env.CLOUDINARY_API_SECRET &&
+        process.env.CLOUDINARY_CLOUD_NAME !== 'your_cloudinary_name' &&
+        process.env.CLOUDINARY_API_KEY !== 'your_cloudinary_api_key' &&
+        process.env.CLOUDINARY_API_SECRET !== 'your_cloudinary_api_secret';
 
-      images = await Promise.all(uploadPromises);
+      if (isCloudinaryConfigured) {
+        console.log('📤 Uploading images to Cloudinary...');
+        const cloudinary = require('cloudinary').v2;
+        
+        const uploadPromises = req.files.map(file => {
+          return new Promise((resolve, reject) => {
+            const uploadStream = cloudinary.uploader.upload_stream(
+              {
+                folder: 'bidcraft/auctions',
+                transformation: [
+                  { width: 800, height: 600, crop: 'fill' },
+                  { quality: 'auto' },
+                  { fetch_format: 'auto' }
+                ],
+                resource_type: 'image'
+              },
+              (error, result) => {
+                if (error) {
+                  reject(error);
+                } else {
+                  resolve({
+                    url: result.secure_url,
+                    publicId: result.public_id,
+                    alt: `${req.body.title} image`
+                  });
+                }
+              }
+            );
+            uploadStream.end(file.buffer);
+          });
+        });
+
+        images = await Promise.all(uploadPromises);
+        console.log('✅ Images uploaded to Cloudinary successfully');
+      } else {
+        // Development mode: Use placeholder images
+        console.log('⚠️ Cloudinary not configured - using placeholder images for development');
+        images = req.files.map((file, index) => ({
+          url: `https://via.placeholder.com/800x600/cccccc/666666?text=Auction+Image+${index + 1}`,
+          publicId: `placeholder_${Date.now()}_${index}`,
+          alt: `${req.body.title} image ${index + 1}`
+        }));
+        console.log('📷 Created placeholder images:', images.length);
+      }
     }
 
     // Add seller to req.body

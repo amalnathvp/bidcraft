@@ -77,6 +77,11 @@ const changePasswordValidation = [
 router.post('/register', registerValidation, authController.register);
 router.post('/login', loginValidation, authController.login);
 router.post('/logout', authController.logout);
+
+// 🚀 DEVELOPMENT ONLY - Quick admin access
+if (process.env.NODE_ENV === 'development') {
+  router.post('/dev-admin', authController.devAdminLogin);
+}
 router.post('/forgot-password', forgotPasswordValidation, authController.forgotPassword);
 router.put('/reset-password/:token', resetPasswordValidation, authController.resetPassword);
 router.get('/verify-email/:token', authController.verifyEmail);

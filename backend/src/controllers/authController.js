@@ -7,9 +7,16 @@ const sendEmail = require('../utils/sendEmail');
 
 // Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
+  console.log('🔐 Generating token for user ID:', id);
+  console.log('🔒 JWT_SECRET exists:', !!process.env.JWT_SECRET);
+  console.log('🔒 JWT_SECRET length:', process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0);
+  
+  const token = jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRE || '7d'
   });
+  
+  console.log('✅ Token generated successfully, length:', token.length);
+  return token;
 };
 
 // Send token response
@@ -159,6 +166,29 @@ const login = asyncHandler(async (req, res, next) => {
   const { email, password } = req.body;
   console.log('🔐 Login attempt for:', email);
 
+  // 🚀 DEVELOPMENT ADMIN BYPASS - Quick admin access without password
+  if (process.env.NODE_ENV === 'development' && email === 'admin@dev.local') {
+    console.log('🔓 Development admin bypass activated!');
+    
+    // Find or create the dev admin user
+    let user = await User.findOne({ email: 'admin@dev.local' });
+    if (!user) {
+      user = await User.create({
+        name: 'Dev Admin',
+        email: 'admin@dev.local',
+        password: 'temp123', // This won't be used due to bypass
+        role: 'admin',
+        isVerified: true,
+        isActive: true
+      });
+      console.log('✅ Dev admin user created');
+    }
+    
+    console.log('🎯 Bypassing password check for dev admin');
+    sendTokenResponse(user, 200, res);
+    return;
+  }
+
   // Check for user
   const user = await User.findOne({ email }).select('+password');
 
@@ -188,6 +218,34 @@ const login = asyncHandler(async (req, res, next) => {
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
+  sendTokenResponse(user, 200, res);
+});
+
+// @desc    Development admin login bypass
+// @route   POST /api/auth/dev-admin  
+// @access  Public (Development only)
+const devAdminLogin = asyncHandler(async (req, res, next) => {
+  if (process.env.NODE_ENV !== 'development') {
+    return next(new AppError('This endpoint is only available in development', 404));
+  }
+
+  console.log('🚀 Dev admin instant login requested');
+  
+  // Find or create the dev admin user
+  let user = await User.findOne({ email: 'admin@dev.local' });
+  if (!user) {
+    user = await User.create({
+      name: 'Dev Admin',
+      email: 'admin@dev.local', 
+      password: 'temp123',
+      role: 'admin',
+      isVerified: true,
+      isActive: true
+    });
+    console.log('✅ Dev admin user created');
+  }
+
+  console.log('🎯 Instant admin login successful');
   sendTokenResponse(user, 200, res);
 });
 
@@ -505,6 +563,7 @@ const refreshToken = asyncHandler(async (req, res, next) => {
 module.exports = {
   register,
   login,
+  devAdminLogin,
   logout,
   getMe,
   updateDetails,

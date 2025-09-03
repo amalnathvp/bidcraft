@@ -34,11 +34,37 @@ class ApiService {
 
     // Add authentication token if available
     const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers = {
-        ...config.headers,
-        Authorization: `Bearer ${token}`,
-      };
+    console.log('🔍 API Service: Retrieved token from localStorage:', token);
+    console.log('🔍 API Service: Token type:', typeof token);
+    console.log('🔍 API Service: Token length:', token ? token.length : 0);
+    
+    // Check if token is valid (not null, not "null" string, not empty)
+    if (token && token !== 'null' && token.trim() !== '') {
+      const cleanToken = token.trim();
+      console.log('✅ API Service: Adding Authorization header');
+      console.log('🔑 API Service: Token preview:', cleanToken.substring(0, 30) + '...');
+      
+      // Validate JWT format
+      const parts = cleanToken.split('.');
+      if (parts.length === 3) {
+        config.headers = {
+          ...config.headers,
+          Authorization: `Bearer ${cleanToken}`,
+        };
+        console.log('✅ API Service: Valid JWT token added to request');
+      } else {
+        console.error('❌ API Service: Invalid JWT format - parts:', parts.length);
+        console.error('❌ API Service: Clearing invalid token from localStorage');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
+    } else {
+      console.log('⚠️ API Service: No valid token available');
+      if (token === 'null') {
+        console.log('🧹 API Service: Cleaning up "null" string from localStorage');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
     }
 
     try {
@@ -88,10 +114,35 @@ class ApiService {
 
     // Add authentication token if available
     const token = localStorage.getItem('authToken');
-    if (token) {
-      config.headers = {
-        Authorization: `Bearer ${token}`,
-      };
+    console.log('🔍 FormData: Retrieved token from localStorage:', token);
+    console.log('🔍 FormData: Token type:', typeof token);
+    
+    // Check if token is valid (not null, not "null" string, not empty)
+    if (token && token !== 'null' && token.trim() !== '') {
+      const cleanToken = token.trim();
+      console.log('✅ FormData: Adding Authorization header');
+      console.log('🔑 FormData: Token preview:', cleanToken.substring(0, 30) + '...');
+      
+      // Validate JWT format
+      const parts = cleanToken.split('.');
+      if (parts.length === 3) {
+        config.headers = {
+          Authorization: `Bearer ${cleanToken}`,
+        };
+        console.log('✅ FormData: Valid JWT token added to request');
+      } else {
+        console.error('❌ FormData: Invalid JWT format - parts:', parts.length);
+        console.error('❌ FormData: Clearing invalid token from localStorage');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
+    } else {
+      console.log('⚠️ FormData: No valid token available');
+      if (token === 'null') {
+        console.log('🧹 FormData: Cleaning up "null" string from localStorage');
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+      }
     }
 
     try {
