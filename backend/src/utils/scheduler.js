@@ -51,6 +51,48 @@ const updateAuctionStatuses = async () => {
           { status: 'lost' }
         );
         
+        // Emit real-time auction end notification using Socket service
+        if (global.socketService) {
+          // Notify all users in auction room
+          global.socketService.emitAuctionUpdate(auction._id, 'auction-ended', {
+            winner: {
+              id: winningBid.bidder._id,
+              name: winningBid.bidder.name
+            },
+            finalPrice: winningBid.amount,
+            endType: 'time_expired',
+            auctionTitle: auction.title
+          });
+          
+          // Notify live auction participants
+          global.socketService.emitLiveAuctionUpdate(auction._id, {
+            eventType: 'auction-ended',
+            winner: {
+              id: winningBid.bidder._id,
+              name: winningBid.bidder.name
+            },
+            finalPrice: winningBid.amount,
+            endType: 'time_expired'
+          });
+          
+          // Notify winner specifically
+          global.socketService.emitToUser(winningBid.bidder._id.toString(), 'auction-won', {
+            auctionId: auction._id,
+            auctionTitle: auction.title,
+            winningAmount: winningBid.amount,
+            sellerName: auction.seller.name
+          });
+          
+          // Notify seller
+          global.socketService.emitToUser(auction.seller._id.toString(), 'auction-sold', {
+            auctionId: auction._id,
+            auctionTitle: auction.title,
+            finalPrice: winningBid.amount,
+            buyerName: winningBid.bidder.name,
+            saleType: 'auction_end'
+          });
+        }
+        
         // Send emails
         try {
           // Email to winner
@@ -93,6 +135,35 @@ const updateAuctionStatuses = async () => {
           { auction: auction._id },
           { status: 'lost' }
         );
+        
+        // Emit real-time auction end notification using Socket service
+        if (global.socketService) {
+          // Notify all users in auction room
+          global.socketService.emitAuctionUpdate(auction._id, 'auction-ended', {
+            winner: null,
+            finalPrice: winningBid ? winningBid.amount : 0,
+            endType: 'no_reserve_met',
+            auctionTitle: auction.title,
+            reservePrice: auction.reservePrice
+          });
+          
+          // Notify live auction participants
+          global.socketService.emitLiveAuctionUpdate(auction._id, {
+            eventType: 'auction-ended',
+            winner: null,
+            endType: 'no_reserve_met',
+            reservePrice: auction.reservePrice
+          });
+          
+          // Notify seller
+          global.socketService.emitToUser(auction.seller._id.toString(), 'auction-ended-no-sale', {
+            auctionId: auction._id,
+            auctionTitle: auction.title,
+            highestBid: winningBid ? winningBid.amount : 0,
+            reservePrice: auction.reservePrice,
+            totalBids: auction.totalBids
+          });
+        }
         
         // Email to seller
         try {

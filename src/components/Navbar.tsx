@@ -119,7 +119,7 @@ const Navbar: React.FC<NavbarProps> = ({
                   )}
                   {user.role === 'admin' && (
                     <button 
-                      onClick={() => handleAuthNavigation('admin-dashboard')} 
+                      onClick={() => handleAuthNavigation('admin-main')} 
                       className="dropdown-item admin-link"
                     >
                       <i className="fas fa-crown"></i>
@@ -133,18 +133,48 @@ const Navbar: React.FC<NavbarProps> = ({
                     <i className="fas fa-gavel"></i>
                     Live Auctions
                   </button>
-                  <a href="#" className="dropdown-item">
-                    <i className="fas fa-heart"></i>
-                    My Watchlist
-                  </a>
-                  <a href="#" className="dropdown-item">
+                  <button 
+                    onClick={() => handleAuthNavigation('orders')} 
+                    className="dropdown-item"
+                  >
                     <i className="fas fa-shopping-bag"></i>
-                    My Purchases
-                  </a>
-                  <a href="#" className="dropdown-item">
-                    <i className="fas fa-cog"></i>
-                    Settings
-                  </a>
+                    My Orders
+                  </button>
+                  <button 
+                    onClick={() => handleAuthNavigation('payments')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-credit-card"></i>
+                    Payments
+                  </button>
+                  <button 
+                    onClick={() => handleAuthNavigation('reviews')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-star"></i>
+                    Reviews
+                  </button>
+                  <button 
+                    onClick={() => handleAuthNavigation('notifications')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-bell"></i>
+                    Notifications
+                  </button>
+                  <button 
+                    onClick={() => handleAuthNavigation('analytics')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-chart-bar"></i>
+                    Analytics
+                  </button>
+                  <button 
+                    onClick={() => handleAuthNavigation('profile')} 
+                    className="dropdown-item"
+                  >
+                    <i className="fas fa-user"></i>
+                    Profile Settings
+                  </button>
                   <div className="dropdown-divider"></div>
                   <button onClick={handleLogout} className="dropdown-item logout">
                     <i className="fas fa-sign-out-alt"></i>

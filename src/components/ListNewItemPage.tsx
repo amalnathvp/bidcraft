@@ -194,6 +194,8 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+    console.log('📷 handleImageChange: Selected files:', files.length);
+    
     if (files.length + images.length > 10) {
       setErrors(prev => ({ ...prev, images: 'Maximum 10 images allowed' }));
       return;
@@ -203,6 +205,8 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
     const validFiles = files.filter(file => {
       const isValidType = ['image/jpeg', 'image/png', 'image/webp'].includes(file.type);
       const isValidSize = file.size <= 5 * 1024 * 1024; // 5MB
+      
+      console.log(`📷 File validation: ${file.name} - Type: ${file.type} (${isValidType ? 'OK' : 'INVALID'}), Size: ${(file.size / 1024 / 1024).toFixed(2)}MB (${isValidSize ? 'OK' : 'TOO LARGE'})`);
       
       if (!isValidType) {
         setErrors(prev => ({ ...prev, images: 'Only JPEG, PNG, and WebP images are allowed' }));
@@ -216,16 +220,21 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
     });
 
     if (validFiles.length > 0) {
+      console.log('📷 Adding valid files to state:', validFiles.length);
       setImages(prev => [...prev, ...validFiles]);
       
       // Create previews
       validFiles.forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
+          console.log('📷 Preview created for:', file.name);
           setImagePreviews(prev => [...prev, e.target?.result as string]);
         };
         reader.readAsDataURL(file);
       });
+      
+      // Clear any previous error
+      setErrors(prev => ({ ...prev, images: '' }));
     }
   };
 
@@ -312,7 +321,8 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
     setLoading(true);
     
     try {
-      console.log('Creating auction with data:', formData);
+      console.log('🚀 Creating auction with data:', formData);
+      console.log('📷 Number of images selected:', images.length);
       
       // Create FormData for API submission
       const auctionFormData = new FormData();
@@ -366,28 +376,31 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
         auctionFormData.append('artisan', formData.origin.artisan);
       }
       
-      // Add images
+      // Add images with detailed logging
+      console.log('📷 Adding images to FormData...');
       images.forEach((image, index) => {
+        console.log(`📷 Adding image ${index + 1}: ${image.name} (${(image.size / 1024 / 1024).toFixed(2)}MB)`);
         auctionFormData.append('images', image);
       });
       
-      console.log('FormData prepared, calling API...');
+      console.log('📤 FormData prepared, calling API...');
+      console.log('📊 FormData contents prepared with', images.length, 'images');
       
       // Call the auction service to create the auction
       const response = await auctionService.createAuction(auctionFormData);
       
-      console.log('Auction created successfully:', response);
+      console.log('✅ Auction created successfully:', response);
       
       if (response.success) {
-        alert(`Auction "${formData.title}" created successfully! Your auction is now live.`);
+        alert(`Auction "${formData.title}" created successfully! Your auction is now live and images have been properly uploaded.`);
         onNavigate('seller-dashboard');
       } else {
         throw new Error(response.message || 'Failed to create auction');
       }
       
     } catch (error: any) {
-      console.error('Error creating auction:', error);
-      setErrors({ submit: error.message || 'An error occurred while creating the auction' });
+      console.error('❌ Error creating auction:', error);
+      setErrors({ submit: error.message || 'An error occurred while creating the auction. Please check your images and try again.' });
     } finally {
       setLoading(false);
     }
@@ -541,6 +554,13 @@ const ListNewItemPage: React.FC<ListNewItemPageProps> = ({ onNavigate }) => {
                 className={errors.images ? 'error' : ''}
               />
               {errors.images && <span className="error-message">{errors.images}</span>}
+              {images.length > 0 && !errors.images && (
+                <div className="upload-info">
+                  <span className="success-message">
+                    ✅ {images.length} image{images.length > 1 ? 's' : ''} selected and ready to upload
+                  </span>
+                </div>
+              )}
             </div>
 
             {imagePreviews.length > 0 && (

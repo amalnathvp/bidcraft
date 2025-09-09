@@ -187,22 +187,182 @@ const placeBid = asyncHandler(async (req, res, next) => {
   await bid.populate('bidder', 'name');
   await bid.populate('auction', 'title currentPrice totalBids');
   
+  // Update auction with new bid
+  if (bidType !== 'buy_now') {
+    // Mark previous winning bid as not winning
+    await Bid.updateMany(
+      { auction: auction._id, isWinning: true },
+      { isWinning: false }
+    );
+    
+    // Mark this bid as winning
+    bid.isWinning = true;
+    await bid.save();
+    
+    // Update auction current price and bid count
+    auction.currentPrice = amount;
+    auction.totalBids = (auction.totalBids || 0) + 1;
+    await auction.save();
+    
+    // ===== ENHANCED REAL-TIME BID UPDATES =====
+    if (global.socketService) {
+      console.log(`📡 Emitting real-time bid updates for auction ${auction._id}`);
+      
+      // 1. Emit to live auction room (active bidders)
+      global.socketService.emitLiveAuctionUpdate(auction._id, {
+        eventType: 'new-bid',
+        newCurrentPrice: amount,
+        totalBids: auction.totalBids,
+        leadingBidder: {
+          id: user._id,
+          name: user.name
+        },
+        bidTime: bid.bidTime,
+        bidIncrement: amount - (auction.currentPrice - amount),
+        isProxyBid: bidType === 'automatic'
+      });
+      
+      // 2. Emit to general auction room (viewers)
+      global.socketService.emitAuctionUpdate(auction._id, 'bid-placed', {
+        amount,
+        bidderName: user.name,
+        newCurrentPrice: amount,
+        totalBids: auction.totalBids,
+        timeRemaining: Math.max(0, auction.endTime - new Date()),
+        bidType
+      });
+      
+      // 3. Notify auction seller with detailed information
+      global.socketService.emitToUser(auction.seller.toString(), 'new-bid-notification', {
+        auctionId: auction._id,
+        auctionTitle: auction.title,
+        bidAmount: amount,
+        bidderName: user.name,
+        totalBids: auction.totalBids,
+        bidType,
+        timeRemaining: Math.max(0, auction.endTime - new Date()),
+        previousPrice: auction.currentPrice - amount
+      });
+      
+      // 4. Notify outbid users (previous highest bidders)
+      const previousHighestBids = await Bid.find({
+        auction: auction._id,
+        isValid: true,
+        bidder: { $ne: user._id },
+        amount: { $gte: auction.currentPrice * 0.8 } // Recent high bidders
+      }).populate('bidder', '_id').distinct('bidder');
+      
+      previousHighestBids.forEach(previousBidderId => {
+        global.socketService.emitToUser(previousBidderId.toString(), 'outbid-notification', {
+          auctionId: auction._id,
+          auctionTitle: auction.title,
+          yourBid: auction.currentPrice - amount,
+          newHighestBid: amount,
+          bidderName: user.name,
+          timeRemaining: Math.max(0, auction.endTime - new Date())
+        });
+      });
+      
+      // 5. Broadcast to watchers (users who bookmarked the auction)
+      if (auction.watchers && auction.watchers.length > 0) {
+        auction.watchers.forEach(watcherId => {
+          global.socketService.emitToUser(watcherId.toString(), 'watched-auction-bid', {
+            auctionId: auction._id,
+            auctionTitle: auction.title,
+            newBidAmount: amount,
+            bidderName: user.name,
+            totalBids: auction.totalBids
+          });
+        });
+      }
+    } else {
+      console.warn('⚠️ Global socket service not available for real-time updates');
+    }
+  }
+  
   // Handle buy now - end auction immediately
   if (bidType === 'buy_now') {
     auction.status = 'sold';
     auction.winner = user._id;
     auction.endTime = new Date();
+    auction.currentPrice = amount;
     await auction.save();
     
-    // Emit socket event for auction end
-    const { io } = require('../../server');
-    if (io) {
-      io.to(`auction-${auction._id}`).emit('auction-ended', {
-        auctionId: auction._id,
-        winner: user._id,
+    // ===== ENHANCED BUY NOW REAL-TIME UPDATES =====
+    if (global.socketService) {
+      console.log(`💰 Emitting buy-now completion for auction ${auction._id}`);
+      
+      // 1. Notify all auction viewers that auction ended
+      global.socketService.emitAuctionUpdate(auction._id, 'auction-ended', {
+        winner: {
+          id: user._id,
+          name: user.name
+        },
         finalPrice: amount,
-        type: 'buy_now'
+        endType: 'buy_now',
+        endedAt: new Date()
       });
+      
+      // 2. Notify live bidders that auction ended
+      global.socketService.emitLiveAuctionUpdate(auction._id, {
+        eventType: 'auction-ended',
+        winner: {
+          id: user._id,
+          name: user.name
+        },
+        finalPrice: amount,
+        endType: 'buy_now',
+        endedAt: new Date()
+      });
+      
+      // 3. Notify seller with sale details
+      global.socketService.emitToUser(auction.seller.toString(), 'auction-sold', {
+        auctionId: auction._id,
+        auctionTitle: auction.title,
+        finalPrice: amount,
+        buyerName: user.name,
+        buyerId: user._id,
+        saleType: 'buy_now',
+        soldAt: new Date(),
+        commissionRate: 0.05, // Example commission rate
+        sellerEarnings: amount * 0.95
+      });
+      
+      // 4. Notify buyer with purchase confirmation
+      global.socketService.emitToUser(user._id.toString(), 'purchase-confirmed', {
+        auctionId: auction._id,
+        auctionTitle: auction.title,
+        purchasePrice: amount,
+        sellerName: auction.seller.name || 'Seller',
+        purchaseType: 'buy_now',
+        purchasedAt: new Date()
+      });
+      
+      // 5. Notify all watchers that item was sold
+      if (auction.watchers && auction.watchers.length > 0) {
+        auction.watchers.forEach(watcherId => {
+          if (watcherId.toString() !== user._id.toString()) {
+            global.socketService.emitToUser(watcherId.toString(), 'watched-auction-ended', {
+              auctionId: auction._id,
+              auctionTitle: auction.title,
+              endType: 'buy_now',
+              finalPrice: amount,
+              winnerName: user.name
+            });
+          }
+        });
+      }
+      
+      // 6. Broadcast system-wide for featured auctions
+      if (auction.isFeatured) {
+        global.socketService.broadcastAnnouncement({
+          type: 'featured_sold',
+          message: `Featured item "${auction.title}" sold via Buy Now for $${amount}`,
+          auctionId: auction._id
+        });
+      }
+    } else {
+      console.warn('⚠️ Global socket service not available for buy-now updates');
     }
   }
   
@@ -290,14 +450,52 @@ const retractBid = asyncHandler(async (req, res, next) => {
   auction.totalBids -= 1;
   await auction.save();
   
-  // Emit socket event
-  const { io } = require('../../server');
-  if (io) {
-    io.to(`auction-${auction._id}`).emit('bid-retracted', {
-      auctionId: auction._id,
+  // ===== ENHANCED BID RETRACTION REAL-TIME UPDATES =====
+  if (global.socketService) {
+    console.log(`🔄 Emitting bid retraction updates for auction ${auction._id}`);
+    
+    // 1. Notify auction viewers of bid retraction
+    global.socketService.emitAuctionUpdate(auction._id, 'bid-retracted', {
+      retractedBidAmount: bid.amount,
+      retractedBy: req.user.name,
       currentPrice: auction.currentPrice,
-      totalBids: auction.totalBids
+      totalBids: auction.totalBids,
+      newLeader: nextHighestBid ? {
+        name: nextHighestBid.bidder?.name || 'Anonymous',
+        amount: nextHighestBid.amount
+      } : null
     });
+    
+    // 2. Notify live auction participants
+    global.socketService.emitLiveAuctionUpdate(auction._id, {
+      eventType: 'bid-retracted',
+      retractedBidAmount: bid.amount,
+      currentPrice: auction.currentPrice,
+      totalBids: auction.totalBids,
+      priceDropped: bid.amount - auction.currentPrice
+    });
+    
+    // 3. Notify seller of bid retraction
+    global.socketService.emitToUser(auction.seller.toString(), 'bid-retracted-notification', {
+      auctionId: auction._id,
+      auctionTitle: auction.title,
+      retractedAmount: bid.amount,
+      retractedBy: req.user.name,
+      currentPrice: auction.currentPrice,
+      reason: bid.retractionReason
+    });
+    
+    // 4. If there's a new highest bidder, notify them
+    if (nextHighestBid) {
+      global.socketService.emitToUser(nextHighestBid.bidder.toString(), 'now-highest-bidder', {
+        auctionId: auction._id,
+        auctionTitle: auction.title,
+        yourBidAmount: nextHighestBid.amount,
+        previousBidRetracted: bid.amount
+      });
+    }
+  } else {
+    console.warn('⚠️ Global socket service not available for retraction updates');
   }
   
   res.status(200).json({

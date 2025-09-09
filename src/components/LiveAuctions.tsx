@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { apiService } from '../services/api';
+import { useSocket, useNotifications } from '../hooks/useSocket';
+import BidModal from './BidModal';
+import { AuctionItem } from '../types';
 
 interface LiveAuctionsProps {
   onNavigate?: (page: string, data?: any) => void;
@@ -63,6 +66,14 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   const [auctions, setAuctions] = useState<Auction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Real-time socket connection
+  const { isConnected, connectionError } = useSocket();
+  const { notifications, unreadCount } = useNotifications();
+  
+  // Bid modal state
+  const [showBidModal, setShowBidModal] = useState(false);
+  const [selectedAuctionForBid, setSelectedAuctionForBid] = useState<DisplayAuction | null>(null);
 
   // Fetch auctions from API
   useEffect(() => {
@@ -72,6 +83,8 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   const fetchAuctions = async () => {
     try {
       setLoading(true);
+      console.log('🔍 LiveAuctions: Fetching auctions from API...');
+      
       const queryParams = new URLSearchParams();
       
       if (selectedCategory !== 'all') {
@@ -89,15 +102,34 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
       }
 
       const endpoint = `/auctions?${queryParams.toString()}`;
+      console.log('📡 LiveAuctions: Making API call to:', endpoint);
+      
       const response = await apiService.get(endpoint);
       
       if (response.success) {
+        console.log('✅ LiveAuctions: API response successful');
+        console.log('📊 LiveAuctions: Number of auctions fetched:', response.data?.length || 0);
+        
+        if (response.data && response.data.length > 0) {
+          console.log('🖼️ LiveAuctions: First auction images:', response.data[0].images);
+          // Log image URLs for debugging
+          response.data.forEach((auction: any, index: number) => {
+            if (auction.images && auction.images.length > 0) {
+              console.log(`🖼️ Auction ${index + 1} image:`, auction.images[0].url);
+            } else {
+              console.log(`❌ Auction ${index + 1} has no images`);
+            }
+          });
+        }
+        
         setAuctions(response.data);
+        setError('');
       } else {
+        console.error('❌ LiveAuctions: API response not successful:', response);
         setError('Failed to fetch auctions');
       }
     } catch (error) {
-      console.error('Error fetching auctions:', error);
+      console.error('💥 LiveAuctions: Error fetching auctions:', error);
       setError('Failed to load auctions');
     } finally {
       setLoading(false);
@@ -121,10 +153,154 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   };
 
   const getImageUrl = (auction: Auction): string => {
+    console.log('🖼️ getImageUrl called for auction:', auction.title);
+    console.log('🖼️ Auction images array:', auction.images);
+    
+    // Handle database images format: images: [{ url: 'https://...', publicId: '...', alt: '...' }]
     if (auction.images && auction.images.length > 0) {
-      return auction.images[0].url;
+      const firstImage = auction.images[0];
+      console.log('🖼️ First image object:', firstImage);
+      console.log('🖼️ Image URL from database:', firstImage.url);
+      
+      // Check if the image has a proper URL
+      if (firstImage.url && firstImage.url.trim() !== '') {
+        let imageUrl = firstImage.url;
+        
+        // The URL should already be a full URL from the backend
+        // e.g., "http://localhost:5000/uploads/auctions/1757445995853_40fbd430dbeb39ea.png"
+        if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+          console.log('✅ Using full URL from database:', imageUrl);
+          console.log('🧪 Testing URL accessibility by creating test image...');
+          
+          // Test URL accessibility
+          const testImg = new Image();
+          testImg.onload = () => console.log('✅ Test image loaded successfully for:', imageUrl);
+          testImg.onerror = (err) => console.error('❌ Test image failed to load:', imageUrl, err);
+          testImg.src = imageUrl;
+          
+          return imageUrl;
+        }
+        
+        // If URL starts with /uploads, prepend backend server URL
+        if (imageUrl.startsWith('/uploads')) {
+          imageUrl = `http://localhost:5000${imageUrl}`;
+          console.log('✅ Using local server URL:', imageUrl);
+          return imageUrl;
+        }
+        
+        // If URL doesn't start with /, assume it's a relative path from uploads
+        if (!imageUrl.startsWith('/')) {
+          imageUrl = `http://localhost:5000/uploads/${imageUrl}`;
+          console.log('✅ Using constructed URL:', imageUrl);
+          return imageUrl;
+        }
+        
+        console.log('✅ Using database image URL as is:', imageUrl);
+        return imageUrl;
+      }
     }
-    return 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop';
+    
+    console.log('⚠️ No valid images found, using fallback for auction:', auction.title);
+    
+    // Category-specific fallback images for better UX
+    const categoryFallbacks: { [key: string]: string } = {
+      'textiles': 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=300&fit=crop',
+      'pottery': 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=300&fit=crop',
+      'jewelry': 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=300&fit=crop',
+      'woodwork': 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
+      'metalwork': 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+      'paintings': 'https://images.unsplash.com/photo-1541961017774-22349e4a1262?w=400&h=300&fit=crop',
+      'sculptures': 'https://images.unsplash.com/photo-1612198084106-c7dbb33a4e53?w=400&h=300&fit=crop'
+    };
+    
+    // Return category-specific fallback or default fallback
+    const categorySlug = auction.category?.slug || 'default';
+    const fallbackUrl = categoryFallbacks[categorySlug] || 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop';
+    console.log('🔄 Using fallback URL for category', categorySlug, ':', fallbackUrl);
+    return fallbackUrl;
+  };
+
+  // Image component with error handling and loading states
+  const AuctionImage: React.FC<{
+    src: string;
+    alt: string;
+    className?: string;
+    fallbackSrc?: string;
+  }> = ({ src, alt, className = '', fallbackSrc }) => {
+    const [imgSrc, setImgSrc] = useState(src);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    // Sync internal state when src prop changes
+    useEffect(() => {
+      console.log('🔄 AuctionImage: src prop changed to:', src);
+      setImgSrc(src);
+      setLoading(true);
+      setError(false);
+    }, [src]);
+
+    const handleError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      const target = e.target as HTMLImageElement;
+      console.log('❌ AuctionImage: Image failed to load:', imgSrc);
+      console.log('❌ Error details:', {
+        naturalWidth: target.naturalWidth,
+        naturalHeight: target.naturalHeight,
+        complete: target.complete,
+        currentSrc: target.currentSrc
+      });
+      
+      // Check if the URL is reachable
+      fetch(imgSrc, { method: 'HEAD' })
+        .then(response => {
+          console.log('🌐 URL status check:', response.status, response.statusText);
+          if (!response.ok) {
+            console.log('❌ Server returned error for image:', response.status);
+          }
+        })
+        .catch(err => {
+          console.log('❌ Network error accessing image:', err.message);
+        });
+      
+      if (fallbackSrc && imgSrc !== fallbackSrc) {
+        console.log('🔄 AuctionImage: Trying fallback:', fallbackSrc);
+        setImgSrc(fallbackSrc);
+        setError(false); // Reset error state when trying fallback
+      } else {
+        console.log('💥 AuctionImage: No fallback available, showing error state');
+        setError(true);
+      }
+      setLoading(false);
+    };
+
+    const handleLoad = () => {
+      console.log('✅ AuctionImage: Image loaded successfully:', imgSrc);
+      setLoading(false);
+      setError(false);
+    };
+
+    return (
+      <div className={`auction-image-container ${className}`}>
+        {loading && (
+          <div className="image-loading">
+            <div className="loading-spinner"></div>
+          </div>
+        )}
+        {error ? (
+          <div className="image-error">
+            <i className="fas fa-image"></i>
+            <span>Image not available</span>
+          </div>
+        ) : (
+          <img 
+            src={imgSrc} 
+            alt={alt}
+            onError={handleError}
+            onLoad={handleLoad}
+            style={{ display: loading ? 'none' : 'block' }}
+          />
+        )}
+      </div>
+    );
   };
 
   const categories = [
@@ -139,175 +315,30 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   ];
 
   // Use real auction data with fallback to mock data for development
-  const liveAuctions: DisplayAuction[] = auctions.map(auction => ({
-    id: auction._id,
-    title: auction.title,
-    category: auction.category.name,
-    currentBid: auction.currentPrice || auction.startingPrice,
-    startingBid: auction.startingPrice,
-    bidCount: auction.totalBids || 0,
-    timeLeft: formatTimeRemaining(auction.endTime),
-    endTime: auction.endTime,
-    image: getImageUrl(auction),
-    seller: auction.seller?.name || auction.seller?.shopName || 'Unknown Seller',
-    condition: auction.condition || 'Good',
-    isHot: (auction.totalBids || 0) > 5, // Consider auction "hot" if it has more than 5 bids
-    reserveMet: (auction.currentPrice || auction.startingPrice) >= (auction.reservePrice || 0),
-    watchers: auction.watchers ? auction.watchers.length : Math.floor(Math.random() * 30) + 5
-  }));
+  const liveAuctions: DisplayAuction[] = auctions.map(auction => {
+    const imageUrl = getImageUrl(auction);
+    console.log(`📋 Processing auction "${auction.title}" with image URL:`, imageUrl);
+    
+    return {
+      id: auction._id,
+      title: auction.title,
+      category: auction.category.name,
+      currentBid: auction.currentPrice || auction.startingPrice,
+      startingBid: auction.startingPrice,
+      bidCount: auction.totalBids || 0,
+      timeLeft: formatTimeRemaining(auction.endTime),
+      endTime: auction.endTime,
+      image: imageUrl,
+      seller: auction.seller?.name || auction.seller?.shopName || 'Unknown Seller',
+      condition: auction.condition || 'Good',
+      isHot: (auction.totalBids || 0) > 5, // Consider auction "hot" if it has more than 5 bids
+      reserveMet: (auction.currentPrice || auction.startingPrice) >= (auction.reservePrice || 0),
+      watchers: auction.watchers ? auction.watchers.length : Math.floor(Math.random() * 30) + 5
+    };
+  });
 
-  // Fallback mock data for development if no auctions loaded  
-  const fallbackAuctions = [
-    {
-      id: '1',
-      title: 'Vintage Kashmiri Pashmina Shawl',
-      category: 'textiles',
-      currentBid: 285,
-      startingBid: 150,
-      bidCount: 8,
-      timeLeft: '2d 14h 32m',
-      endTime: '2025-08-18 18:30:00',
-      image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=400&h=300&fit=crop',
-      seller: 'KashmirCrafts',
-      condition: 'Excellent',
-      isHot: true,
-      reserveMet: true,
-      watchers: 15
-    },
-    {
-      id: '2',
-      title: 'Hand-carved Wooden Buddha Statue',
-      category: 'woodwork',
-      currentBid: 195,
-      startingBid: 100,
-      bidCount: 12,
-      timeLeft: '1d 8h 45m',
-      endTime: '2025-08-17 12:45:00',
-      image: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=300&fit=crop',
-      seller: 'WoodMaster',
-      condition: 'Very Good',
-      isHot: false,
-      reserveMet: false,
-      watchers: 23
-    },
-    {
-      id: '3',
-      title: 'Traditional Rajasthani Mirror Work Bag',
-      category: 'textiles',
-      currentBid: 125,
-      startingBid: 75,
-      bidCount: 6,
-      timeLeft: '3d 2h 15m',
-      endTime: '2025-08-19 08:15:00',
-      image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop',
-      seller: 'RajasthanArts',
-      condition: 'Mint',
-      isHot: true,
-      reserveMet: true,
-      watchers: 8
-    },
-    {
-      id: '4',
-      title: 'Antique Brass Ceremonial Lamp',
-      category: 'metalwork',
-      currentBid: 220,
-      startingBid: 120,
-      bidCount: 15,
-      timeLeft: '4d 12h 20m',
-      endTime: '2025-08-20 18:20:00',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
-      seller: 'BrassArtisans',
-      condition: 'Good',
-      isHot: false,
-      reserveMet: true,
-      watchers: 19
-    },
-    {
-      id: '5',
-      title: 'Handwoven Kilim Rug',
-      category: 'textiles',
-      currentBid: 350,
-      startingBid: 200,
-      bidCount: 22,
-      timeLeft: '1d 6h 10m',
-      endTime: '2025-08-17 10:10:00',
-      image: 'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=400&h=300&fit=crop',
-      seller: 'RugMasters',
-      condition: 'Excellent',
-      isHot: true,
-      reserveMet: true,
-      watchers: 31
-    },
-    {
-      id: '6',
-      title: 'Silver Filigree Jewelry Set',
-      category: 'jewelry',
-      currentBid: 185,
-      startingBid: 100,
-      bidCount: 9,
-      timeLeft: '2d 18h 45m',
-      endTime: '2025-08-19 00:45:00',
-      image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=300&fit=crop',
-      seller: 'SilverCrafts',
-      condition: 'Mint',
-      isHot: false,
-      reserveMet: false,
-      watchers: 12
-    },
-    {
-      id: '7',
-      title: 'Blue Pottery Dinner Set',
-      category: 'pottery',
-      currentBid: 165,
-      startingBid: 90,
-      bidCount: 11,
-      timeLeft: '5d 4h 30m',
-      endTime: '2025-08-21 10:30:00',
-      image: 'https://images.unsplash.com/photo-1610701596007-11502861dcfa?w=400&h=300&fit=crop',
-      seller: 'PotteryHouse',
-      condition: 'Very Good',
-      isHot: false,
-      reserveMet: true,
-      watchers: 16
-    },
-    {
-      id: '8',
-      title: 'Carved Jade Dragon Figurine',
-      category: 'sculptures',
-      currentBid: 275,
-      startingBid: 150,
-      bidCount: 18,
-      timeLeft: '3d 22h 05m',
-      endTime: '2025-08-20 04:05:00',
-      image: 'https://images.unsplash.com/photo-1612198084106-c7dbb33a4e53?w=400&h=300&fit=crop',
-      seller: 'JadeArtists',
-      condition: 'Excellent',
-      isHot: true,
-      reserveMet: true,
-      watchers: 25
-    }
-  ];
-
-  // Define common auction type for filtering and display
-  type DisplayAuction = {
-    id: string;
-    title: string;
-    category: string;
-    currentBid: number;
-    startingBid: number;
-    bidCount: number;
-    timeLeft: string;
-    endTime: string;
-    image: string;
-    seller: string;
-    condition: string;
-    isHot: boolean;
-    reserveMet: boolean;
-    watchers: number;
-  };
-
-  // Combine real auctions with fallback for seamless display
-  const allAuctions = auctions.length > 0 ? liveAuctions : fallbackAuctions;
+  // Use only real auction data from database
+  const allAuctions = liveAuctions;
 
   const featuredAuctions = allAuctions.filter((auction: DisplayAuction) => auction.isHot).slice(0, 3);
   const endingSoon = [...allAuctions].sort((a: DisplayAuction, b: DisplayAuction) => {
@@ -359,6 +390,21 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     onNavigate && onNavigate('auction-detail', { auctionId: auction.id });
   };
 
+  const handleBidClick = (auction: DisplayAuction, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent auction click navigation
+    setSelectedAuctionForBid(auction);
+    setShowBidModal(true);
+  };
+
+  const handleBidSubmit = (amount: number) => {
+    if (selectedAuctionForBid) {
+      console.log(`Placing bid of $${amount} on auction:`, selectedAuctionForBid.title);
+      // Bid will be placed via the BidModal's socket integration
+      setShowBidModal(false);
+      setSelectedAuctionForBid(null);
+    }
+  };
+
   const formatTimeLeft = (timeString: string) => {
     const parts = timeString.split(' ');
     return (
@@ -392,6 +438,26 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     <div className="live-auctions">
       <div className="auctions-hero">
         <div className="container">
+          {/* Real-time Connection Status */}
+          <div className="connection-status">
+            {isConnected ? (
+              <div className="status-connected">
+                🟢 Real-time bidding active
+              </div>
+            ) : (
+              <div className="status-disconnected">
+                🟡 {connectionError || 'Connecting to real-time updates...'}
+              </div>
+            )}
+          </div>
+
+          {/* Notifications */}
+          {unreadCount > 0 && (
+            <div className="notification-banner">
+              🔔 You have {unreadCount} new notifications
+            </div>
+          )}
+
           <div className="hero-content">
             <h1>Live Auctions</h1>
             <p>Discover unique handicrafts from artisans around the world</p>
@@ -414,6 +480,90 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
       </div>
 
       <div className="container">
+        {/* Debug Information */}
+        {auctions.length > 0 && (
+          <div className="debug-section">
+            <h4>🔍 Debug Info</h4>
+            <p><strong>Total auctions loaded:</strong> {auctions.length}</p>
+            <p><strong>Filtered auctions:</strong> {sortedAuctions.length}</p>
+            {auctions.length > 0 && (
+              <div>
+                <p><strong>First auction title:</strong> {auctions[0].title}</p>
+                <p><strong>First auction images:</strong> {JSON.stringify(auctions[0].images, null, 2)}</p>
+                <p><strong>Generated image URL:</strong> {getImageUrl(auctions[0])}</p>
+                
+                {/* Test image display directly */}
+                <div style={{ margin: '1rem 0' }}>
+                  <p><strong>Direct Image Test:</strong></p>
+                  <div style={{ 
+                    display: 'flex', 
+                    gap: '1rem', 
+                    alignItems: 'flex-start',
+                    marginBottom: '1rem'
+                  }}>
+                    <div>
+                      <p><strong>Generated URL:</strong></p>
+                      <code className="debug-url">
+                        {getImageUrl(auctions[0])}
+                      </code>
+                    </div>
+                    <div>
+                      <p><strong>Raw Database URL:</strong></p>
+                      <code className="debug-url">
+                        {auctions[0].images[0]?.url || 'No URL'}
+                      </code>
+                    </div>
+                  </div>
+                  <img 
+                    src={getImageUrl(auctions[0])} 
+                    alt={auctions[0].title}
+                    style={{
+                      maxWidth: '200px',
+                      maxHeight: '150px',
+                      border: '2px solid #007bff',
+                      borderRadius: '4px',
+                      display: 'block'
+                    }}
+                    onError={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      console.error('❌ Debug image failed:', img.src);
+                      console.error('❌ Image element details:', {
+                        naturalWidth: img.naturalWidth,
+                        naturalHeight: img.naturalHeight,
+                        complete: img.complete
+                      });
+                    }}
+                    onLoad={(e) => {
+                      const img = e.target as HTMLImageElement;
+                      console.log('✅ Debug image loaded successfully!', {
+                        src: img.src,
+                        naturalWidth: img.naturalWidth,
+                        naturalHeight: img.naturalHeight
+                      });
+                    }}
+                  />
+                  
+                  {/* Add a direct browser test link */}
+                  <div style={{ marginTop: '0.5rem' }}>
+                    <a 
+                      href={getImageUrl(auctions[0])} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ 
+                        color: '#007bff', 
+                        textDecoration: 'none',
+                        fontSize: '12px'
+                      }}
+                    >
+                      🔗 Open image in new tab
+                    </a>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      
         <div className="search-filters">
           <div className="search-bar">
             <div className="search-input-group">
@@ -486,7 +636,12 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
             {featuredAuctions.map((auction: DisplayAuction) => (
               <div key={auction.id} className="featured-card" onClick={() => handleAuctionClick(auction)}>
                 <div className="featured-image">
-                  <img src={auction.image} alt={auction.title} />
+                  <AuctionImage 
+                    src={auction.image} 
+                    alt={auction.title}
+                    className="featured-img"
+                    fallbackSrc="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
+                  />
                   <div className="featured-overlay">
                     <span className="hot-badge">🔥 HOT</span>
                     <div className="watchers">
@@ -507,7 +662,12 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
                   <div className="time-remaining">
                     {formatTimeLeft(auction.timeLeft)}
                   </div>
-                  <button className="btn-primary">Place Bid</button>
+                  <button 
+                    className="btn-primary"
+                    onClick={(e) => handleBidClick(auction, e)}
+                  >
+                    🔴 Live Bid
+                  </button>
                 </div>
               </div>
             ))}
@@ -520,7 +680,12 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
             {endingSoon.map(auction => (
               <div key={auction.id} className="ending-soon-card" onClick={() => handleAuctionClick(auction)}>
                 <div className="card-image">
-                  <img src={auction.image} alt={auction.title} />
+                  <AuctionImage 
+                    src={auction.image} 
+                    alt={auction.title}
+                    className="ending-img"
+                    fallbackSrc="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
+                  />
                   <div className="time-badge">
                     {auction.timeLeft.split(' ')[0]}
                   </div>
@@ -555,7 +720,12 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
             {sortedAuctions.map(auction => (
               <div key={auction.id} className="auction-card" onClick={() => handleAuctionClick(auction)}>
                 <div className="card-image">
-                  <img src={auction.image} alt={auction.title} />
+                  <AuctionImage 
+                    src={auction.image} 
+                    alt={auction.title}
+                    className="auction-img"
+                    fallbackSrc="https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop"
+                  />
                   <div className="image-overlay">
                     {auction.isHot && <span className="hot-badge">🔥</span>}
                     <button className="watchlist-btn">
@@ -593,7 +763,12 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
                     {auction.watchers} watching
                   </div>
                   <div className="card-actions">
-                    <button className="btn-primary">Place Bid</button>
+                    <button 
+                      className="btn-primary"
+                      onClick={(e) => handleBidClick(auction, e)}
+                    >
+                      🔴 Live Bid
+                    </button>
                     <button className="btn-outline">Watch</button>
                   </div>
                 </div>
@@ -627,7 +802,175 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
             </div>
           </div>
         </div>
+
+        {/* Real-time Bid Modal */}
+        {showBidModal && selectedAuctionForBid && (
+          <BidModal
+            item={{
+              id: selectedAuctionForBid.id,
+              title: selectedAuctionForBid.title,
+              currentBid: selectedAuctionForBid.currentBid,
+              image: selectedAuctionForBid.image,
+              timeLeft: selectedAuctionForBid.timeLeft,
+              seller: selectedAuctionForBid.seller,
+              category: selectedAuctionForBid.category,
+              condition: selectedAuctionForBid.condition,
+              watchers: selectedAuctionForBid.watchers,
+              bidCount: selectedAuctionForBid.bidCount,
+              startingBid: selectedAuctionForBid.startingBid,
+              endTime: selectedAuctionForBid.endTime,
+              isHot: selectedAuctionForBid.isHot,
+              reserveMet: selectedAuctionForBid.reserveMet
+            }}
+            onClose={() => {
+              setShowBidModal(false);
+              setSelectedAuctionForBid(null);
+            }}
+            onSubmit={handleBidSubmit}
+          />
+        )}
       </div>
+
+      <style>{`
+        .connection-status {
+          margin-bottom: 1rem;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          font-size: 14px;
+        }
+
+        .status-connected {
+          background: #d1fae5;
+          color: #047857;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .status-disconnected {
+          background: #fef3c7;
+          color: #92400e;
+        }
+
+        .notification-banner {
+          background: #dbeafe;
+          color: #1e40af;
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          text-align: center;
+        }
+
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .card-actions button {
+          transition: all 0.2s ease;
+        }
+
+        .featured-card:hover .btn-primary {
+          background: #dc2626;
+        }
+
+        .auction-card:hover .btn-primary {
+          background: #dc2626;
+        }
+
+        /* Enhanced image styling and debugging */
+        .auction-image-container {
+          position: relative;
+          width: 100%;
+          height: 200px;
+          overflow: hidden;
+          background-color: #f8f9fa;
+          border-radius: 8px;
+        }
+
+        .auction-image-container img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          transition: transform 0.3s ease;
+        }
+
+        .auction-image-container:hover img {
+          transform: scale(1.05);
+        }
+
+        .image-loading {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .loading-spinner {
+          width: 40px;
+          height: 40px;
+          border: 3px solid #f3f3f3;
+          border-top: 3px solid #007bff;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+
+        .image-error {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.5rem;
+          color: #6c757d;
+          text-align: center;
+          padding: 1rem;
+        }
+
+        .image-error i {
+          font-size: 2rem;
+          opacity: 0.5;
+        }
+
+        .image-error span {
+          font-size: 0.875rem;
+        }
+
+        /* Debug section styling */
+        .debug-section {
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 4px;
+          padding: 1rem;
+          margin-bottom: 2rem;
+          font-size: 14px;
+        }
+
+        .debug-section h4 {
+          margin-bottom: 0.5rem;
+          color: #495057;
+        }
+
+        .debug-url {
+          background: #f8f9fa;
+          padding: 0.25rem;
+          border-radius: 3px;
+          font-size: 12px;
+          word-break: break-all;
+          font-family: monospace;
+        }
+      `}</style>
     </div>
   );
 };

@@ -192,14 +192,45 @@ const createAuction = asyncHandler(async (req, res, next) => {
         images = await Promise.all(uploadPromises);
         console.log('✅ Images uploaded to Cloudinary successfully');
       } else {
-        // Development mode: Use placeholder images
-        console.log('⚠️ Cloudinary not configured - using placeholder images for development');
-        images = req.files.map((file, index) => ({
-          url: `https://via.placeholder.com/800x600/cccccc/666666?text=Auction+Image+${index + 1}`,
-          publicId: `placeholder_${Date.now()}_${index}`,
-          alt: `${req.body.title} image ${index + 1}`
+        // Local file storage for development
+        console.log('💾 Cloudinary not configured - saving images locally...');
+        const fs = require('fs');
+        const path = require('path');
+        const crypto = require('crypto');
+        
+        // Create uploads directory if it doesn't exist
+        const uploadDir = path.join(__dirname, '../../uploads/auctions');
+        if (!fs.existsSync(uploadDir)) {
+          fs.mkdirSync(uploadDir, { recursive: true });
+          console.log('📁 Created uploads directory');
+        }
+        
+        // Process each uploaded file
+        images = await Promise.all(req.files.map(async (file, index) => {
+          // Generate unique filename
+          const fileExtension = path.extname(file.originalname);
+          const fileName = `${Date.now()}_${crypto.randomBytes(8).toString('hex')}${fileExtension}`;
+          const filePath = path.join(uploadDir, fileName);
+          
+          // Save file to local storage
+          fs.writeFileSync(filePath, file.buffer);
+          
+          // Create accessible URL for the frontend
+          const port = process.env.PORT || 5000;
+          const baseUrl = `http://localhost:${port}`;
+          const imageUrl = `${baseUrl}/uploads/auctions/${fileName}`;
+          
+          console.log(`💾 Saved image locally: ${fileName} -> ${imageUrl}`);
+          
+          return {
+            url: imageUrl,
+            publicId: `local_${fileName.split('.')[0]}`,
+            alt: `${req.body.title} image ${index + 1}`,
+            localPath: filePath
+          };
         }));
-        console.log('📷 Created placeholder images:', images.length);
+        
+        console.log('✅ Images saved locally successfully');
       }
     }
 
@@ -553,6 +584,37 @@ const publishAuction = asyncHandler(async (req, res, next) => {
   
   await auction.save();
   
+  // Emit auction published notification using Socket service
+  if (global.socketService) {
+    if (auction.status === 'active') {
+      // Notify all users about new active auction
+      global.socketService.emitToRole('buyer', 'new-auction-available', {
+        auctionId: auction._id,
+        title: auction.title,
+        category: auction.category,
+        startingPrice: auction.startingPrice,
+        endTime: auction.endTime,
+        sellerName: req.user.name
+      });
+      
+      // Notify admin room
+      global.socketService.emitToAdmins('auction-published', {
+        auctionId: auction._id,
+        title: auction.title,
+        seller: req.user.name,
+        status: 'active'
+      });
+    } else {
+      // Notify about scheduled auction
+      global.socketService.emitToAdmins('auction-scheduled', {
+        auctionId: auction._id,
+        title: auction.title,
+        seller: req.user.name,
+        startTime: auction.startTime
+      });
+    }
+  }
+  
   res.status(200).json({
     success: true,
     data: auction
@@ -575,6 +637,29 @@ const cancelAuction = asyncHandler(async (req, res, next) => {
   
   auction.status = 'cancelled';
   await auction.save();
+  
+  // Emit auction cancellation notification using Socket service
+  if (global.socketService) {
+    // Notify all users watching this auction
+    global.socketService.emitAuctionUpdate(auction._id, 'auction-cancelled', {
+      auctionTitle: auction.title,
+      reason: req.body.reason || 'Cancelled by seller'
+    });
+    
+    // Notify any live auction participants
+    global.socketService.emitLiveAuctionUpdate(auction._id, {
+      eventType: 'auction-cancelled',
+      reason: req.body.reason || 'Cancelled by seller'
+    });
+    
+    // Notify admins
+    global.socketService.emitToAdmins('auction-cancelled', {
+      auctionId: auction._id,
+      title: auction.title,
+      seller: req.user.name,
+      totalBids: auction.totalBids
+    });
+  }
   
   res.status(200).json({
     success: true,

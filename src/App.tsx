@@ -18,6 +18,13 @@ import BuyerDashboard from './components/BuyerDashboard';
 import LiveAuctions from './components/LiveAuctions';
 import AuctionDetail from './components/AuctionDetail';
 import ListNewItemPage from './components/ListNewItemPage';
+import OrdersPage from './components/OrdersPage';
+import PaymentsPage from './components/PaymentsPage';
+import AnalyticsPage from './components/AnalyticsPage';
+import NotificationsPage from './components/NotificationsPage';
+import ReviewsPage from './components/ReviewsPage';
+import UserProfilePage from './components/UserProfilePage';
+import AdminDashboardPage from './components/AdminDashboardPage';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminAnalytics from './components/admin/AdminAnalytics';
 import AdminCommission from './components/admin/AdminCommission';
@@ -137,6 +144,20 @@ const AppContent: React.FC = () => {
         );
       case 'list-new-item':
         return <ListNewItemPage onNavigate={handleNavigation} />;
+      case 'orders':
+        return <OrdersPage onNavigate={handleNavigation} />;
+      case 'payments':
+        return <PaymentsPage onNavigate={handleNavigation} />;
+      case 'analytics':
+        return <AnalyticsPage onNavigate={handleNavigation} />;
+      case 'notifications':
+        return <NotificationsPage onNavigate={handleNavigation} />;
+      case 'reviews':
+        return <ReviewsPage onNavigate={handleNavigation} />;
+      case 'profile':
+        return <UserProfilePage onNavigate={handleNavigation} />;
+      case 'admin-main':
+        return <AdminDashboardPage onNavigate={handleNavigation} />;
       case 'buyer-dashboard':
         // Allow access to buyer dashboard even without login (demo mode)
         const demoBuyer = user || {

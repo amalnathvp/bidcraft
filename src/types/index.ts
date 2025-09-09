@@ -1,12 +1,22 @@
 export interface AuctionItem {
   id: string;
   title: string;
-  artisan: string;
+  artisan?: string;
+  seller?: string;
   currentBid: number;
   bidCount: number;
-  timeRemaining: string;
-  imageUrl: string;
-  isLive: boolean;
+  timeRemaining?: string;
+  timeLeft?: string;
+  imageUrl?: string;
+  image?: string;
+  isLive?: boolean;
+  category?: string;
+  condition?: string;
+  watchers?: number;
+  startingBid?: number;
+  endTime?: string;
+  isHot?: boolean;
+  reserveMet?: boolean;
 }
 
 export interface Category {

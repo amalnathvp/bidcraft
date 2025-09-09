@@ -115,7 +115,7 @@ const AuctionsPage: React.FC = () => {
   const filteredAndSortedAuctions = allAuctions
     .filter(auction => {
       const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           auction.artisan.toLowerCase().includes(searchTerm.toLowerCase());
+                           (auction.artisan?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
       // For now, ignore category filtering since it's not in the AuctionItem type
       return matchesSearch;
     })
@@ -123,8 +123,10 @@ const AuctionsPage: React.FC = () => {
       switch (sortBy) {
         case 'ending-soon':
           // Sort by time remaining - items ending soon first
-          if (a.timeRemaining.includes('h') && b.timeRemaining.includes('m') && !b.timeRemaining.includes('h')) return 1;
-          if (b.timeRemaining.includes('h') && a.timeRemaining.includes('m') && !a.timeRemaining.includes('h')) return -1;
+          const aTimeRemaining = a.timeRemaining || '';
+          const bTimeRemaining = b.timeRemaining || '';
+          if (aTimeRemaining.includes('h') && bTimeRemaining.includes('m') && !bTimeRemaining.includes('h')) return 1;
+          if (bTimeRemaining.includes('h') && aTimeRemaining.includes('m') && !aTimeRemaining.includes('h')) return -1;
           return 0;
         case 'price-low':
           return a.currentBid - b.currentBid;
@@ -214,7 +216,7 @@ const AuctionsPage: React.FC = () => {
               <div className="card-image">
                 <img src={auction.imageUrl} alt={auction.title} />
                 <div className="card-overlay-top">
-                  {getStatusBadge(auction.isLive, auction.timeRemaining)}
+                  {getStatusBadge(auction.isLive ?? false, auction.timeRemaining ?? '')}
                   {auction.isLive && auction.timeRemaining !== 'Ended' && (
                     <div className="time-remaining">{auction.timeRemaining}</div>
                   )}
@@ -223,7 +225,7 @@ const AuctionsPage: React.FC = () => {
               
               <div className="card-content">
                 <h3>{auction.title}</h3>
-                <p className="artisan">by {auction.artisan}</p>
+                <p className="artisan">by {auction.artisan || 'Unknown'}</p>
                 
                 <div className="bid-info">
                   <div className="bid-details">
