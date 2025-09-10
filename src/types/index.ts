@@ -10,7 +10,7 @@ export interface AuctionItem {
   imageUrl?: string;
   image?: string;
   isLive?: boolean;
-  category?: string;
+  category?: string | { _id?: string; name?: string; slug?: string; fullPath?: string; id?: string };
   condition?: string;
   watchers?: number;
   startingBid?: number;

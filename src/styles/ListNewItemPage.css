@@ -675,3 +675,175 @@
     font-size: 1.2em;
   }
 }
+
+/* Loading and Error States */
+.loading-state,
+.error-state,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+.loading-state i,
+.error-state i,
+.empty-state i {
+  font-size: 3em;
+  margin-bottom: 20px;
+  opacity: 0.7;
+}
+
+.loading-state i {
+  color: #667eea;
+}
+
+.error-state i {
+  color: #dc3545;
+}
+
+.empty-state i {
+  color: #6c757d;
+}
+
+.loading-state p,
+.error-state p,
+.empty-state p {
+  font-size: 1.1em;
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.empty-state h4 {
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+/* Recent Sales Styles */
+.sale-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 15px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.sale-item:last-child {
+  border-bottom: none;
+}
+
+.sale-image {
+  flex-shrink: 0;
+}
+
+.sale-thumbnail {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  border: 2px solid #f0f0f0;
+}
+
+.sale-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sale-info h4 {
+  margin: 0 0 5px 0;
+  font-size: 1em;
+  font-weight: 600;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sale-info p {
+  margin: 0 0 3px 0;
+  font-size: 0.9em;
+  color: #666;
+}
+
+.sale-meta {
+  font-size: 0.8em;
+  color: #999;
+}
+
+.sale-price {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.final-price {
+  display: block;
+  font-size: 1.1em;
+  font-weight: 700;
+  color: #28a745;
+  margin-bottom: 2px;
+}
+
+.commission {
+  display: block;
+  font-size: 0.8em;
+  color: #dc3545;
+  margin-bottom: 2px;
+}
+
+.net-earnings {
+  display: block;
+  font-size: 0.9em;
+  font-weight: 600;
+  color: #333;
+  border-top: 1px solid #eee;
+  padding-top: 2px;
+}
+
+.loading-placeholder,
+.empty-sales {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  color: #666;
+}
+
+.loading-placeholder i,
+.empty-sales i {
+  font-size: 2em;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.loading-placeholder span,
+.empty-sales p {
+  font-size: 0.9em;
+}
+
+/* Auction Status Styles */
+.status-active {
+  color: #28a745 !important;
+  font-weight: 600;
+}
+
+.status-ended {
+  color: #6c757d !important;
+  font-weight: 600;
+}
+
+.commission {
+  color: #6c757d !important;
+}

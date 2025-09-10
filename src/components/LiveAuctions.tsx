@@ -6,6 +6,7 @@ import { AuctionItem } from '../types';
 
 interface LiveAuctionsProps {
   onNavigate?: (page: string, data?: any) => void;
+  navigationData?: any;
 }
 
 interface Auction {
@@ -57,9 +58,11 @@ type DisplayAuction = {
   watchers: number;
 };
 
-const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
+const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate, navigationData }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(
+    navigationData?.selectedCategory || 'all'
+  );
   const [sortBy, setSortBy] = useState('ending-soon');
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [showFilters, setShowFilters] = useState(false);
@@ -74,6 +77,14 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   // Bid modal state
   const [showBidModal, setShowBidModal] = useState(false);
   const [selectedAuctionForBid, setSelectedAuctionForBid] = useState<DisplayAuction | null>(null);
+
+  // Update selected category when navigation data changes
+  useEffect(() => {
+    if (navigationData?.selectedCategory) {
+      console.log('🏷️ LiveAuctions: Setting category from navigation:', navigationData.selectedCategory);
+      setSelectedCategory(navigationData.selectedCategory);
+    }
+  }, [navigationData]);
 
   // Fetch auctions from API
   useEffect(() => {
@@ -303,16 +314,29 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
     );
   };
 
-  const categories = [
-    { id: 'all', label: 'All Categories', count: 156 },
-    { id: 'textiles', label: 'Textiles', count: 42 },
-    { id: 'pottery', label: 'Pottery & Ceramics', count: 28 },
-    { id: 'jewelry', label: 'Jewelry', count: 35 },
-    { id: 'woodwork', label: 'Woodwork', count: 24 },
-    { id: 'metalwork', label: 'Metalwork', count: 18 },
-    { id: 'paintings', label: 'Paintings', count: 15 },
-    { id: 'sculptures', label: 'Sculptures', count: 12 }
-  ];
+  // Helper function to match category ID with category name
+  const matchesCategoryHelper = (auctionCategory: string, selectedCategoryId: string): boolean => {
+    if (selectedCategoryId === 'all') return true;
+    
+    // Create mapping between category IDs and potential category names
+    const categoryMappings: { [key: string]: string[] } = {
+      'textiles': ['textiles', 'textiles & fabrics', 'textile', 'fabrics', 'clothing', 'embroidery'],
+      'pottery': ['pottery', 'ceramics', 'pottery & ceramics', 'ceramic', 'clay'],
+      'jewelry': ['jewelry', 'jewellery', 'accessories', 'ornaments'],
+      'woodwork': ['woodwork', 'wood', 'wooden', 'carpentry', 'furniture'],
+      'metalwork': ['metalwork', 'metal', 'brass', 'copper', 'silver', 'iron'],
+      'paintings': ['paintings', 'painting', 'art', 'canvas', 'artwork'],
+      'sculptures': ['sculptures', 'sculpture', 'carving', 'statue']
+    };
+    
+    const mappedCategories = categoryMappings[selectedCategoryId] || [selectedCategoryId];
+    const auctionCategoryLower = auctionCategory.toLowerCase();
+    
+    return mappedCategories.some(categoryName => 
+      auctionCategoryLower.includes(categoryName.toLowerCase()) ||
+      categoryName.toLowerCase().includes(auctionCategoryLower)
+    );
+  };
 
   // Use real auction data with fallback to mock data for development
   const liveAuctions: DisplayAuction[] = auctions.map(auction => {
@@ -340,6 +364,23 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   // Use only real auction data from database
   const allAuctions = liveAuctions;
 
+  // Calculate category counts dynamically based on actual auction data
+  const getCategoryCount = (categoryId: string): number => {
+    if (categoryId === 'all') return allAuctions.length;
+    return allAuctions.filter(auction => matchesCategoryHelper(auction.category, categoryId)).length;
+  };
+
+  const categories = [
+    { id: 'all', label: 'All Categories', count: getCategoryCount('all') },
+    { id: 'textiles', label: 'Textiles', count: getCategoryCount('textiles') },
+    { id: 'pottery', label: 'Pottery & Ceramics', count: getCategoryCount('pottery') },
+    { id: 'jewelry', label: 'Jewelry', count: getCategoryCount('jewelry') },
+    { id: 'woodwork', label: 'Woodwork', count: getCategoryCount('woodwork') },
+    { id: 'metalwork', label: 'Metalwork', count: getCategoryCount('metalwork') },
+    { id: 'paintings', label: 'Paintings', count: getCategoryCount('paintings') },
+    { id: 'sculptures', label: 'Sculptures', count: getCategoryCount('sculptures') }
+  ];
+
   const featuredAuctions = allAuctions.filter((auction: DisplayAuction) => auction.isHot).slice(0, 3);
   const endingSoon = [...allAuctions].sort((a: DisplayAuction, b: DisplayAuction) => {
     // Parse time remaining for sorting
@@ -361,7 +402,7 @@ const LiveAuctions: React.FC<LiveAuctionsProps> = ({ onNavigate }) => {
   }).slice(0, 4);
 
   const filteredAuctions = allAuctions.filter((auction: DisplayAuction) => {
-    const matchesCategory = selectedCategory === 'all' || auction.category === selectedCategory;
+    const matchesCategory = matchesCategoryHelper(auction.category, selectedCategory);
     const matchesSearch = auction.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          auction.seller.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesPrice = (!priceRange.min || auction.currentBid >= parseInt(priceRange.min)) &&

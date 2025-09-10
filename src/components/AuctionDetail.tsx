@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/api';
+import { getCategoryName } from '../utils/categoryUtils';
 
 interface AuctionDetailProps {
   auctionId: string;
@@ -156,7 +157,7 @@ const AuctionDetail: React.FC<AuctionDetailProps> = ({ auctionId, onNavigate, on
     specifications: auctionData.specifications || [
       { label: "Material", value: auctionData.materials?.[0] || "Not specified" },
       { label: "Condition", value: auctionData.condition },
-      { label: "Category", value: auctionData.category.name }
+      { label: "Category", value: getCategoryName(auctionData.category) }
     ],
     relatedItems: [
       // Mock related items for now - would need to fetch from separate API endpoint
@@ -223,7 +224,7 @@ const AuctionDetail: React.FC<AuctionDetailProps> = ({ auctionId, onNavigate, on
             <i className="fas fa-arrow-left"></i>
             Back to Auctions
           </button>
-          <span>/ {auction.category} / {auction.subcategory}</span>
+          <span>/ {getCategoryName(auction.category)} / {auction.subcategory}</span>
         </div>
 
         <div className="auction-layout">
@@ -260,7 +261,7 @@ const AuctionDetail: React.FC<AuctionDetailProps> = ({ auctionId, onNavigate, on
               <h1>{auction.title}</h1>
               <div className="auction-meta">
                 <span className="condition">Condition: {auction.condition}</span>
-                <span className="category">{auction.category}</span>
+                <span className="category">{getCategoryName(auction.category)}</span>
                 {auction.authentication && (
                   <span className="authenticated">
                     <i className="fas fa-certificate"></i>

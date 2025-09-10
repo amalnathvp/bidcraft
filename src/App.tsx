@@ -133,7 +133,7 @@ const AppContent: React.FC = () => {
       case 'auctions':
         return <AuctionsPage />;
       case 'live-auctions':
-        return <LiveAuctions onNavigate={handleNavigation} />;
+        return <LiveAuctions onNavigate={handleNavigation} navigationData={navigationData} />;
       case 'auction-detail':
         return (
           <AuctionDetail 
@@ -241,7 +241,7 @@ const AppContent: React.FC = () => {
               }
               onViewAllAuctions={() => setCurrentPage('live-auctions')}
             />
-            <Categories />
+            <Categories onNavigate={handleNavigation} />
             <HowItWorks />
             <About />
             <Newsletter onSubscribe={() => 

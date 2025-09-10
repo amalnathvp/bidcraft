@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/ListNewItemPage.css';
 import { auctionService } from '../services/auctionService';
+import { AuctionItem } from '../types';
+import { getCategoryName } from '../utils/categoryUtils';
 
 interface SellerDashboardProps {
   onNavigate?: (page: string) => void;
@@ -10,78 +12,144 @@ interface SellerDashboardProps {
 const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [showListingModal, setShowListingModal] = useState(false);
+  const [auctions, setAuctions] = useState<AuctionItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock data for seller dashboard
-  const sellerStats = {
-    totalListings: 24,
-    activeAuctions: 8,
-    soldItems: 16,
-    totalRevenue: 3420,
-    averagePrice: 213,
-    successRate: 85,
-    rating: 4.8,
-    followers: 342
+  // Fetch seller's auctions
+  const fetchSellerAuctions = async () => {
+    try {
+      console.log('🚀 Fetching seller auctions...');
+      setLoading(true);
+      setError(null);
+      const response = await auctionService.getMyAuctions();
+      
+      console.log('📥 Auction service response:', response);
+      
+      if (response.success && response.data) {
+        console.log('✅ Successfully fetched auctions:', response.data.length);
+        setAuctions(response.data);
+      } else {
+        console.log('❌ Failed to fetch auctions:', response.message);
+        setError(response.message || 'Failed to fetch auctions');
+      }
+    } catch (err) {
+      console.error('💥 Error fetching seller auctions:', err);
+      setError('Failed to load your auctions. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const recentSales = [
-    {
-      id: 1,
-      title: "Handwoven Kashmiri Pashmina Shawl",
-      finalPrice: 340,
-      soldDate: "2025-08-12",
-      buyer: "collector123",
-      commission: 20.40
-    },
-    {
-      id: 2,
-      title: "Traditional Rajasthani Miniature Painting",
-      finalPrice: 275,
-      soldDate: "2025-08-10",
-      buyer: "artlover89",
-      commission: 16.50
-    },
-    {
-      id: 3,
-      title: "Carved Wooden Elephant Statue",
-      finalPrice: 185,
-      soldDate: "2025-08-08",
-      buyer: "woodcollector",
-      commission: 14.80
-    }
-  ];
+  // Fetch auctions on component mount
+  useEffect(() => {
+    console.log('🔄 useEffect triggered. User:', user);
+    console.log('🔐 Is authenticated:', user?.isAuthenticated);
+    
+    // Always try to fetch auctions, even for demo users
+    fetchSellerAuctions();
+  }, [user?.isAuthenticated]);
 
-  const activeListings = [
-    {
-      id: 1,
-      title: "Handmade Brass Oil Lamp",
-      currentBid: 85,
-      startingBid: 45,
-      timeLeft: "2d 14h",
-      watchers: 12,
-      bidCount: 8,
-      status: "active"
-    },
-    {
-      id: 2,
-      title: "Embroidered Silk Cushion Cover",
-      currentBid: 62,
-      startingBid: 35,
-      timeLeft: "1d 8h",
-      watchers: 7,
-      bidCount: 5,
-      status: "active"
-    },
-    {
-      id: 3,
-      title: "Ceramic Tea Set with Floral Design",
-      currentBid: 0,
-      startingBid: 75,
-      timeLeft: "3d 2h",
-      watchers: 15,
-      bidCount: 0,
-      status: "scheduled"
-    }
-  ];
+  // Calculate stats from real auction data
+  const sellerStats = React.useMemo(() => {
+    console.log('🔍 Calculating seller stats with auctions:', auctions.length);
+    
+    const activeAuctions = auctions.filter(auction => {
+      const endTime = new Date(auction.endTime || '');
+      return endTime > new Date();
+    }).length;
+
+    const soldItems = auctions.filter(auction => {
+      const endTime = new Date(auction.endTime || '');
+      return endTime <= new Date() && auction.bidCount > 0;
+    }).length;
+
+    const totalRevenue = auctions
+      .filter(auction => {
+        const endTime = new Date(auction.endTime || '');
+        return endTime <= new Date() && auction.bidCount > 0;
+      })
+      .reduce((sum, auction) => sum + (auction.currentBid || 0), 0);
+
+    const averagePrice = soldItems > 0 ? Math.round(totalRevenue / soldItems) : 0;
+    const successRate = auctions.length > 0 ? Math.round((soldItems / auctions.length) * 100) : 0;
+
+    const stats = {
+      totalListings: auctions.length,
+      activeAuctions,
+      soldItems,
+      totalRevenue: Math.round(totalRevenue),
+      averagePrice,
+      successRate,
+      rating: 4.8, // This would come from user profile
+      followers: 342 // This would come from user profile
+    };
+
+    console.log('📊 Calculated seller stats:', stats);
+    return stats;
+  }, [auctions]);
+
+  // Get recent auctions created by seller from database
+  const recentAuctions = React.useMemo(() => {
+    const sellerAuctions = auctions
+      .sort((a, b) => new Date(b.endTime || '').getTime() - new Date(a.endTime || '').getTime())
+      .slice(0, 5)
+      .map(auction => ({
+        id: auction.id,
+        title: auction.title,
+        currentBid: auction.currentBid,
+        startingBid: auction.startingBid || auction.currentBid,
+        createdDate: new Date(auction.endTime || '').toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        }),
+        image: auction.imageUrl || auction.image,
+        category: getCategoryName(auction.category),
+        bidCount: auction.bidCount,
+        status: new Date(auction.endTime || '') > new Date() ? 'active' : 'ended'
+      }));
+
+    console.log('🏺 Recent auctions calculated:', sellerAuctions);
+    return sellerAuctions;
+  }, [auctions]);
+
+  // Get active listings from real auction data
+  const activeListings = React.useMemo(() => {
+    const now = new Date();
+    return auctions
+      .filter(auction => {
+        const endTime = new Date(auction.endTime || '');
+        return endTime > now;
+      })
+      .map(auction => {
+        const endTime = new Date(auction.endTime || '');
+        const timeDiff = endTime.getTime() - now.getTime();
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        
+        let timeLeft = '';
+        if (days > 0) {
+          timeLeft = `${days}d ${hours}h`;
+        } else if (hours > 0) {
+          timeLeft = `${hours}h`;
+        } else {
+          const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+          timeLeft = `${minutes}m`;
+        }
+
+        return {
+          id: auction.id,
+          title: auction.title,
+          currentBid: auction.currentBid,
+          startingBid: auction.startingBid || auction.currentBid,
+          timeLeft,
+          watchers: auction.watchers || 0,
+          bidCount: auction.bidCount,
+          status: auction.bidCount > 0 ? "active" : "scheduled"
+        };
+      });
+  }, [auctions]);
 
   const draftListings = [
     {
@@ -140,7 +208,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
             <i className="fas fa-box"></i>
           </div>
           <div className="stat-content">
-            <h3>{sellerStats.totalListings}</h3>
+            <h3>{loading ? '...' : sellerStats.totalListings || 0}</h3>
             <p>Total Listings</p>
           </div>
         </div>
@@ -149,7 +217,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
             <i className="fas fa-gavel"></i>
           </div>
           <div className="stat-content">
-            <h3>{sellerStats.activeAuctions}</h3>
+            <h3>{loading ? '...' : sellerStats.activeAuctions || 0}</h3>
             <p>Active Auctions</p>
           </div>
         </div>
@@ -158,7 +226,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
             <i className="fas fa-check-circle"></i>
           </div>
           <div className="stat-content">
-            <h3>{sellerStats.soldItems}</h3>
+            <h3>{loading ? '...' : sellerStats.soldItems || 0}</h3>
             <p>Items Sold</p>
           </div>
         </div>
@@ -167,7 +235,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
             <i className="fas fa-dollar-sign"></i>
           </div>
           <div className="stat-content">
-            <h3>${sellerStats.totalRevenue}</h3>
+            <h3>{loading ? '...' : `$${sellerStats.totalRevenue || 0}`}</h3>
             <p>Total Revenue</p>
           </div>
         </div>
@@ -176,19 +244,44 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
       <div className="dashboard-grid">
         <div className="dashboard-card">
           <div className="card-header">
-            <h3>Recent Sales</h3>
+            <h3>Recent Auctions</h3>
             <button className="btn-outline small">View All</button>
           </div>
           <div className="sales-list">
-            {recentSales.map(sale => (
-              <div key={sale.id} className="sale-item">
+            {loading && (
+              <div className="loading-placeholder">
+                <i className="fas fa-spinner fa-spin"></i>
+                <span>Loading your auctions...</span>
+              </div>
+            )}
+            {!loading && recentAuctions.length === 0 && (
+              <div className="empty-sales">
+                <i className="fas fa-gavel"></i>
+                <p>No auctions yet. Your created auctions will appear here.</p>
+              </div>
+            )}
+            {!loading && recentAuctions.map(auction => (
+              <div key={auction.id} className="sale-item">
+                <div className="sale-image">
+                  <img 
+                    src={auction.image || `https://images.unsplash.com/photo-1500000000000?w=60&h=60&fit=crop`} 
+                    alt={auction.title}
+                    className="sale-thumbnail"
+                  />
+                </div>
                 <div className="sale-info">
-                  <h4>{sale.title}</h4>
-                  <p>Sold to {sale.buyer} • {sale.soldDate}</p>
+                  <h4>{auction.title}</h4>
+                  <p>Created on {auction.createdDate} • {auction.status}</p>
+                  <span className="sale-meta">
+                    {auction.bidCount} bids • {auction.category}
+                  </span>
                 </div>
                 <div className="sale-price">
-                  <span className="final-price">${sale.finalPrice}</span>
-                  <span className="commission">-${sale.commission}</span>
+                  <span className="final-price">${auction.currentBid}</span>
+                  <span className="commission">Starting: ${auction.startingBid}</span>
+                  <span className={`net-earnings status-${auction.status}`}>
+                    {auction.status.charAt(0).toUpperCase() + auction.status.slice(1)}
+                  </span>
                 </div>
               </div>
             ))}
@@ -202,11 +295,15 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
           <div className="metrics-grid">
             <div className="metric">
               <span className="metric-label">Average Sale Price</span>
-              <span className="metric-value">${sellerStats.averagePrice}</span>
+              <span className="metric-value">
+                {loading ? '...' : `$${sellerStats.averagePrice || 0}`}
+              </span>
             </div>
             <div className="metric">
               <span className="metric-label">Success Rate</span>
-              <span className="metric-value">{sellerStats.successRate}%</span>
+              <span className="metric-value">
+                {loading ? '...' : `${sellerStats.successRate || 0}%`}
+              </span>
             </div>
             <div className="metric">
               <span className="metric-label">Seller Rating</span>
@@ -259,27 +356,70 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
     <div className="inventory-section">
       <div className="section-header">
         <h3>My Inventory</h3>
-        <button 
-          className="btn-primary"
-          onClick={() => onNavigate && onNavigate('list-new-item')}
-        >
-          <i className="fas fa-plus"></i>
-          List New Item
-        </button>
+        <div className="header-actions">
+          <button 
+            className="btn-outline small"
+            onClick={fetchSellerAuctions}
+            disabled={loading}
+          >
+            <i className={`fas fa-sync-alt ${loading ? 'fa-spin' : ''}`}></i>
+            Refresh
+          </button>
+          <button 
+            className="btn-primary"
+            onClick={() => onNavigate && onNavigate('list-new-item')}
+          >
+            <i className="fas fa-plus"></i>
+            List New Item
+          </button>
+        </div>
       </div>
 
       <div className="inventory-tabs">
         <button className="tab-btn active">Active ({activeListings.length})</button>
         <button className="tab-btn">Drafts ({draftListings.length})</button>
-        <button className="tab-btn">Ended (12)</button>
-        <button className="tab-btn">Sold (16)</button>
+        <button className="tab-btn">Ended ({auctions.length - activeListings.length})</button>
+        <button className="tab-btn">Sold ({sellerStats.soldItems})</button>
       </div>
 
-      <div className="listings-grid">
-        {activeListings.map(listing => (
+      {loading && (
+        <div className="loading-state">
+          <i className="fas fa-spinner fa-spin"></i>
+          <p>Loading your auctions...</p>
+        </div>
+      )}
+
+      {error && (
+        <div className="error-state">
+          <i className="fas fa-exclamation-circle"></i>
+          <p>{error}</p>
+          <button className="btn-outline small" onClick={fetchSellerAuctions}>
+            Try Again
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && activeListings.length === 0 && (
+        <div className="empty-state">
+          <i className="fas fa-box-open"></i>
+          <h4>No Active Auctions</h4>
+          <p>You don't have any active auctions at the moment.</p>
+          <button 
+            className="btn-primary"
+            onClick={() => onNavigate && onNavigate('list-new-item')}
+          >
+            <i className="fas fa-plus"></i>
+            Create Your First Auction
+          </button>
+        </div>
+      )}
+
+      {!loading && !error && activeListings.length > 0 && (
+        <div className="listings-grid">
+          {activeListings.map(listing => (
           <div key={listing.id} className="listing-card">
             <div className="listing-image">
-              <img src={`https://images.unsplash.com/photo-${1500000000000 + listing.id * 1000}?w=300&h=200&fit=crop`} alt={listing.title} />
+              <img src={auctions.find(a => a.id === listing.id)?.imageUrl || auctions.find(a => a.id === listing.id)?.image || `https://images.unsplash.com/photo-1500000000000?w=300&h=200&fit=crop`} alt={listing.title} />
               <div className="listing-status">
                 <span className={`status-badge ${listing.status}`}>
                   {listing.status}
@@ -309,8 +449,9 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({ onNavigate, user }) =
               </div>
             </div>
           </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 

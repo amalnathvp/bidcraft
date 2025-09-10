@@ -43,7 +43,121 @@ interface OrdersPageProps {
 }
 
 const OrdersPage: React.FC<OrdersPageProps> = ({ onNavigate, userRole = 'buyer' }) => {
-  const [orders, setOrders] = useState<Order[]>([]);
+  // Create dummy orders for testing
+  const dummyOrders: Order[] = [
+    {
+      _id: '66f7a1b2c3d4e5f6a7b8c9d0',
+      auction: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9d1',
+        title: 'Vintage Handcrafted Ceramic Vase',
+        images: [
+          {
+            url: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400',
+            alt: 'Vintage ceramic vase'
+          }
+        ]
+      },
+      buyer: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9d2',
+        name: 'John Doe',
+        email: 'john.doe@example.com'
+      },
+      seller: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9d3',
+        name: 'Sarah Wilson',
+        shopName: 'Artisan Pottery Studio'
+      },
+      finalPrice: 125.50,
+      status: 'shipped',
+      paymentStatus: 'completed',
+      shippingAddress: {
+        street: '123 Main Street, Apt 4B',
+        city: 'New York',
+        state: 'NY',
+        zipCode: '10001',
+        country: 'United States'
+      },
+      trackingInfo: {
+        carrier: 'FedEx',
+        trackingNumber: 'FDX123456789',
+        estimatedDelivery: '2025-09-15T10:00:00.000Z'
+      },
+      createdAt: '2025-09-08T14:30:00.000Z',
+      updatedAt: '2025-09-10T09:15:00.000Z'
+    },
+    {
+      _id: '66f7a1b2c3d4e5f6a7b8c9e1',
+      auction: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9e2',
+        title: 'Antique Wooden Chess Set',
+        images: [
+          {
+            url: 'https://images.unsplash.com/photo-1528056021047-a6e88273c8c3?w=400',
+            alt: 'Wooden chess set'
+          }
+        ]
+      },
+      buyer: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9e3',
+        name: 'Emily Chen',
+        email: 'emily.chen@example.com'
+      },
+      seller: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9e4',
+        name: 'Michael Roberts',
+        shopName: 'Classic Games & Collectibles'
+      },
+      finalPrice: 89.99,
+      status: 'delivered',
+      paymentStatus: 'completed',
+      shippingAddress: {
+        street: '456 Oak Avenue',
+        city: 'Los Angeles',
+        state: 'CA',
+        zipCode: '90210',
+        country: 'United States'
+      },
+      createdAt: '2025-09-05T11:20:00.000Z',
+      updatedAt: '2025-09-09T16:45:00.000Z'
+    },
+    {
+      _id: '66f7a1b2c3d4e5f6a7b8c9f0',
+      auction: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9f1',
+        title: 'Handmade Leather Messenger Bag',
+        images: [
+          {
+            url: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400',
+            alt: 'Leather messenger bag'
+          }
+        ]
+      },
+      buyer: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9f2',
+        name: 'David Thompson',
+        email: 'david.thompson@example.com'
+      },
+      seller: {
+        _id: '66f7a1b2c3d4e5f6a7b8c9f3',
+        name: 'Maria Garcia',
+        shopName: 'Handcrafted Leather Works'
+      },
+      finalPrice: 185.00,
+      status: 'pending',
+      paymentStatus: 'pending',
+      shippingAddress: {
+        street: '789 Pine Street',
+        city: 'Chicago',
+        state: 'IL',
+        zipCode: '60601',
+        country: 'United States'
+      },
+      createdAt: '2025-09-09T16:45:00.000Z',
+      updatedAt: '2025-09-09T16:45:00.000Z'
+    }
+  ];
+
+  const [orders, setOrders] = useState<Order[]>(dummyOrders);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -62,13 +176,22 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ onNavigate, userRole = 'buyer' 
       const response = await apiService.get(`${endpoint}${params}`);
       
       if (response.success) {
-        setOrders(response.data);
+        // Merge dummy orders with real orders, avoiding duplicates
+        const realOrders = response.data || [];
+        const dummyIds = dummyOrders.map(order => order._id);
+        const filteredRealOrders = realOrders.filter((order: Order) => !dummyIds.includes(order._id));
+        const allOrders = [...dummyOrders, ...filteredRealOrders];
+        setOrders(allOrders);
       } else {
-        setError('Failed to fetch orders');
+        // If API fails, just show the dummy orders
+        setOrders(dummyOrders);
+        setError('Failed to fetch orders - showing demo data');
       }
     } catch (error) {
       console.error('Error fetching orders:', error);
-      setError('Failed to load orders');
+      // If API fails, just show the dummy orders
+      setOrders(dummyOrders);
+      setError('Failed to load orders - showing demo data');
     } finally {
       setLoading(false);
     }

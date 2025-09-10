@@ -1,6 +1,7 @@
 const Auction = require('../models/Auction');
 const Category = require('../models/Category');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 const { validationResult } = require('express-validator');
 const { asyncHandler, AppError, formatValidationErrors } = require('../middleware/errorHandler');
 
@@ -17,7 +18,20 @@ const getAuctions = asyncHandler(async (req, res, next) => {
   
   // Filtering
   if (req.query.category) {
-    query.category = req.query.category;
+    // Handle category filtering by name/slug instead of ObjectID
+    const Category = require('../models/Category');
+    const category = await Category.findOne({
+      $or: [
+        { slug: req.query.category },
+        { name: { $regex: new RegExp(req.query.category, 'i') } }
+      ]
+    });
+    if (category) {
+      query.category = category._id;
+    } else {
+      // If category not found, return empty results
+      query.category = new mongoose.Types.ObjectId();
+    }
   }
   
   if (req.query.condition) {

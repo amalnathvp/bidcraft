@@ -1,44 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { adminService, DashboardStats } from '../../services/adminService';
 
 interface AdminDashboardProps {
   onNavigate: (page: string, data?: any) => void;
 }
 
-interface DashboardStats {
-  totalUsers: number;
-  totalAuctions: number;
-  totalRevenue: number;
-  totalCommission: number;
-  activeUsers: number;
-  pendingApprovals: number;
-  disputesOpen: number;
-  fraudAlerts: number;
-}
-
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
-    totalUsers: 1247,
-    totalAuctions: 856,
-    totalRevenue: 285420,
-    totalCommission: 14271,
-    activeUsers: 342,
-    pendingApprovals: 23,
-    disputesOpen: 5,
-    fraudAlerts: 2
+    totalUsers: 5,
+    totalAuctions: 0,
+    totalRevenue: 0,
+    totalCommission: 0,
+    activeUsers: 3,
+    pendingApprovals: 0,
+    disputesOpen: 0,
+    fraudAlerts: 0,
+    recentActivity: {
+      newUsersToday: 0,
+      newAuctionsToday: 0,
+      ordersToday: 0
+    }
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulate real-time updates
+  // Fetch dashboard stats from backend
   useEffect(() => {
-    const interval = setInterval(() => {
-      setStats(prev => ({
-        ...prev,
-        activeUsers: Math.floor(Math.random() * 50) + 300,
-        totalRevenue: prev.totalRevenue + Math.floor(Math.random() * 100)
-      }));
-    }, 10000);
+    const fetchDashboardStats = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const dashboardData = await adminService.getDashboardStats();
+        setStats(dashboardData);
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch dashboard statistics');
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchDashboardStats();
+
+    // Refresh stats every 30 seconds
+    const interval = setInterval(fetchDashboardStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -148,6 +155,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate }) => {
       </div>
 
       <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '40px 20px' }}>
+        {/* Loading State */}
+        {loading && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: '20px',
+            padding: '40px',
+            textAlign: 'center',
+            marginBottom: '40px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>📊</div>
+            <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Loading Dashboard...</h3>
+            <p style={{ margin: '0', color: '#666' }}>Fetching the latest statistics from the database</p>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && !loading && (
+          <div style={{
+            background: 'rgba(255, 255, 255, 0.95)',
+            borderRadius: '20px',
+            padding: '40px',
+            textAlign: 'center',
+            marginBottom: '40px',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+            border: '2px solid #FF5722'
+          }}>
+            <div style={{ fontSize: '48px', marginBottom: '20px' }}>⚠️</div>
+            <h3 style={{ margin: '0 0 10px 0', color: '#FF5722' }}>Error Loading Dashboard</h3>
+            <p style={{ margin: '0 0 20px 0', color: '#666' }}>{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              style={{
+                background: '#FF5722',
+                color: 'white',
+                border: 'none',
+                padding: '12px 24px',
+                borderRadius: '25px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500'
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Key Statistics Cards */}
         <div style={{ 
           display: 'grid', 

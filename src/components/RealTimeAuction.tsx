@@ -3,6 +3,7 @@ import { useSocket, useAuctionRoom, useLiveBidding, useNotifications } from '../
 import { authService } from '../services/auth';
 import BidModal from './BidModal';
 import '../styles/BidModal.css';
+import { getCategoryName } from '../utils/categoryUtils';
 
 interface AuctionDetailProps {
   auctionId: string;
@@ -251,7 +252,7 @@ const RealTimeAuction: React.FC<AuctionDetailProps> = ({ auctionId, onNavigate }
             <div className="auction-header">
               <h1>{auctionData.title}</h1>
               <div className="auction-meta">
-                <span className="category">{auctionData.category.name}</span>
+                <span className="category">{getCategoryName(auctionData.category)}</span>
                 <span className="condition">Condition: {auctionData.condition}</span>
                 <span className="seller">by {auctionData.seller.shopName || auctionData.seller.name}</span>
               </div>

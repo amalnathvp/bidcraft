@@ -1,51 +1,62 @@
 import React from 'react';
 import { Category } from '../types';
 
-const Categories: React.FC = () => {
+interface CategoriesProps {
+  onNavigate?: (page: string, data?: any) => void;
+}
+
+const Categories: React.FC<CategoriesProps> = ({ onNavigate }) => {
   const categories: Category[] = [
     {
-      id: '1',
+      id: 'pottery',
       name: 'Pottery & Ceramics',
       description: 'Handcrafted bowls, vases, and decorative pieces',
       itemCount: 450,
       icon: 'fas fa-palette'
     },
     {
-      id: '2',
+      id: 'textiles',
       name: 'Textiles & Fabrics',
       description: 'Traditional weaving, embroidery, and tapestries',
       itemCount: 320,
       icon: 'fas fa-cut'
     },
     {
-      id: '3',
+      id: 'woodwork',
       name: 'Wood Crafts',
       description: 'Carved sculptures, furniture, and decorative items',
       itemCount: 280,
       icon: 'fas fa-tree'
     },
     {
-      id: '4',
+      id: 'jewelry',
       name: 'Jewelry & Accessories',
       description: 'Handmade jewelry and personal accessories',
       itemCount: 190,
       icon: 'fas fa-gem'
     },
     {
-      id: '5',
+      id: 'metalwork',
       name: 'Metal Works',
       description: 'Forged items, sculptures, and decorative pieces',
       itemCount: 150,
       icon: 'fas fa-hammer'
     },
     {
-      id: '6',
+      id: 'paintings',
       name: 'Art & Paintings',
       description: 'Original artworks and traditional paintings',
       itemCount: 220,
       icon: 'fas fa-brush'
     }
   ];
+
+  const handleCategoryClick = (categoryId: string) => {
+    if (onNavigate) {
+      console.log('🏷️ Category clicked:', categoryId);
+      onNavigate('live-auctions', { selectedCategory: categoryId });
+    }
+  };
 
   return (
     <section id="categories" className="categories">
@@ -56,7 +67,12 @@ const Categories: React.FC = () => {
         </div>
         <div className="categories-grid">
           {categories.map((category) => (
-            <div key={category.id} className="category-card">
+            <div 
+              key={category.id} 
+              className="category-card"
+              onClick={() => handleCategoryClick(category.id)}
+              style={{ cursor: 'pointer' }}
+            >
               <div className="category-icon">
                 <i className={category.icon}></i>
               </div>

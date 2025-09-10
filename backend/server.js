@@ -232,7 +232,7 @@ app.use('/api/upload', require('./src/routes/upload'));
 app.use('/api/orders', require('./src/routes/orderRoutes'));
 app.use('/api/payments', require('./src/routes/paymentRoutes'));
 // app.use('/api/reviews', require('./src/routes/reviewRoutes'));
-// app.use('/api/admin', require('./src/routes/adminRoutes'));
+app.use('/api/admin', require('./src/routes/adminRoutes'));
 
 // Initialize enhanced Socket.io service
 const SocketService = require('./src/services/socketService');

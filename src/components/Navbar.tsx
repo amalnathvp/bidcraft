@@ -197,13 +197,13 @@ const Navbar: React.FC<NavbarProps> = ({
               >
                 Sign Up
               </button>
-              <button 
+              {/* <button 
                 className="btn-secondary"
                 onClick={() => handleAuthNavigation('admin-setup')}
                 style={{ marginLeft: '10px', fontSize: '12px' }}
               >
                 Admin Setup
-              </button>
+              </button> */}
             </>
           )}
         </div>
