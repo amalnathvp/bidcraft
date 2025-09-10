@@ -2,9 +2,10 @@ import React from 'react';
 
 interface HeroProps {
   onGetStarted: () => void;
+  onExploreAuctions?: () => void;
 }
 
-const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
+const Hero: React.FC<HeroProps> = ({ onGetStarted, onExploreAuctions }) => {
   return (
     <section id="home" className="hero">
       <div className="hero-container">
@@ -20,7 +21,7 @@ const Hero: React.FC<HeroProps> = ({ onGetStarted }) => {
             <button className="btn-primary large" onClick={onGetStarted}>
               Start Bidding
             </button>
-            <button className="btn-outline large">
+            <button className="btn-outline large" onClick={onExploreAuctions}>
               Explore Auctions
             </button>
           </div>

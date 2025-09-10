@@ -226,7 +226,15 @@ const AppContent: React.FC = () => {
       default:
         return (
           <>
-            <Hero onGetStarted={() => addNotification('Welcome to BidCraft!', 'success')} />
+            <Hero 
+              onGetStarted={() => {
+                addNotification('Welcome to BidCraft!', 'success');
+                setCurrentPage('live-auctions');
+              }}
+              onExploreAuctions={() => {
+                setCurrentPage('live-auctions');
+              }}
+            />
             <FeaturedAuctions 
               onBidPlaced={(amount: number) => 
                 addNotification(`Your bid of $${amount} has been placed successfully!`, 'success')

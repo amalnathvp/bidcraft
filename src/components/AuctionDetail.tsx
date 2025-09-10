@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { apiService } from '../services/api';
 
 interface AuctionDetailProps {
   auctionId: string;
@@ -6,97 +7,190 @@ interface AuctionDetailProps {
   onBack?: () => void;
 }
 
+// MongoDB Auction interface to match backend data structure
+interface MongoAuction {
+  _id: string;
+  title: string;
+  description: string;
+  category: {
+    _id: string;
+    name: string;
+    slug?: string;
+  };
+  subcategory?: string;
+  images: Array<{
+    url: string;
+    publicId: string;
+    alt?: string;
+  }>;
+  currentPrice: number;
+  startingPrice: number;
+  reservePrice: number;
+  buyNowPrice?: number;
+  totalBids: number;
+  timeLeft?: string;
+  endTime: string;
+  startTime: string;
+  seller: {
+    _id: string;
+    name?: string;
+    shopName?: string;
+    rating?: number;
+    totalSales?: number;
+    location?: string;
+    memberSince?: string;
+    verified?: boolean;
+  };
+  condition: string;
+  status: string;
+  watchers?: string[];
+  materials?: string[];
+  dimensions?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    weight?: number;
+    unit?: string;
+  };
+  origin?: {
+    country?: string;
+    region?: string;
+    artisan?: string;
+  };
+  shipping?: {
+    cost?: number;
+    method?: string;
+    freeShipping?: boolean;
+    international?: boolean;
+    handlingTime?: number;
+  };
+  authentication?: string;
+  era?: string;
+  specifications?: Array<{
+    label: string;
+    value: string;
+  }>;
+}
+
 const AuctionDetail: React.FC<AuctionDetailProps> = ({ auctionId, onNavigate, onBack }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [bidAmount, setBidAmount] = useState('');
   const [watchlisted, setWatchlisted] = useState(false);
   const [showBidModal, setShowBidModal] = useState(false);
+  const [auctionData, setAuctionData] = useState<MongoAuction | null>(null);
+  const [loading, setLoading] = useState(true);
+  // Removed unused error state
 
-  // Mock auction data - in real app this would come from API
-  const auction = {
-    id: auctionId,
-    title: "Vintage Kashmiri Pashmina Shawl",
-    description: "Exquisite hand-woven Kashmiri Pashmina shawl featuring intricate traditional patterns. This authentic piece showcases the finest craftsmanship from the Kashmir valley, made from 100% pure Pashmina wool. The shawl displays beautiful floral motifs in rich burgundy and gold threads, representing centuries-old weaving traditions.",
-    images: [
-      "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=600&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=600&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=600&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1452860606245-08befc0ff44b?w=600&h=400&fit=crop"
-    ],
-    currentBid: 285,
-    startingBid: 150,
-    reservePrice: 200,
-    buyNowPrice: 450,
-    bidCount: 8,
-    timeLeft: "2d 14h 32m",
-    endDate: "2025-08-18 18:30:00",
+  const fetchAuctionData = useCallback(async () => {
+    try {
+      setLoading(true);
+      console.log('🔍 AuctionDetail: Fetching auction data for ID:', auctionId);
+      
+      const response = await apiService.get(`/auctions/${auctionId}`);
+      
+      if (response.success) {
+        console.log('✅ AuctionDetail: Auction data fetched successfully');
+        console.log('📊 AuctionDetail: Auction data:', response.data);
+        setAuctionData(response.data);
+      } else {
+        console.error('❌ AuctionDetail: API response not successful:', response);
+        setAuctionData(null);
+      }
+    } catch (error) {
+      console.error('💥 AuctionDetail: Error fetching auction:', error);
+      setAuctionData(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [auctionId]);
+
+  // Fetch auction data from MongoDB API
+  useEffect(() => {
+    fetchAuctionData();
+  }, [fetchAuctionData]);
+
+  // Convert MongoDB auction data to component-compatible format
+  const auction = auctionData ? {
+    id: auctionData._id,
+    title: auctionData.title,
+    description: auctionData.description,
+    images: auctionData.images.map(img => img.url),
+    currentBid: auctionData.currentPrice,
+    startingBid: auctionData.startingPrice,
+    reservePrice: auctionData.reservePrice,
+    buyNowPrice: auctionData.buyNowPrice,
+    bidCount: auctionData.totalBids,
+    timeLeft: auctionData.timeLeft || "Calculating...",
+    endDate: auctionData.endTime,
     seller: {
-      name: "KashmirCrafts",
-      rating: 4.9,
-      totalSales: 156,
-      location: "Srinagar, Kashmir",
-      memberSince: "2019",
-      verified: true
+      name: auctionData.seller.shopName || auctionData.seller.name || "Unknown Seller",
+      rating: auctionData.seller.rating || 0,
+      totalSales: auctionData.seller.totalSales || 0,
+      location: auctionData.seller.location || "Not specified",
+      memberSince: auctionData.seller.memberSince || "Unknown",
+      verified: auctionData.seller.verified || false
     },
-    category: "Textiles",
-    subcategory: "Shawls & Wraps",
-    condition: "Excellent",
-    era: "Contemporary (Post-1960)",
-    material: "100% Pashmina Wool",
-    dimensions: "200cm x 70cm",
-    weight: "150g",
-    origin: "Kashmir, India",
-    authentication: "Certified Authentic",
+    category: auctionData.category.name,
+    subcategory: auctionData.subcategory || "",
+    condition: auctionData.condition,
+    era: auctionData.era || "Not specified",
+    material: auctionData.materials?.[0] || "Not specified",
+    dimensions: auctionData.dimensions ? 
+      `${auctionData.dimensions.length || 0}cm x ${auctionData.dimensions.width || 0}cm` : 
+      "Not specified",
+    weight: auctionData.dimensions?.weight ? `${auctionData.dimensions.weight}g` : "Not specified",
+    origin: auctionData.origin ? 
+      `${auctionData.origin.region || ''}, ${auctionData.origin.country || ''}`.trim().replace(/^,\s*/, '') : 
+      "Not specified",
+    authentication: auctionData.authentication || "",
     shipping: {
-      cost: 15,
-      time: "3-5 business days",
-      international: true,
-      insurance: true
+      cost: auctionData.shipping?.cost || 0,
+      time: auctionData.shipping?.handlingTime ? `${auctionData.shipping.handlingTime} days` : "Not specified",
+      international: auctionData.shipping?.international || false,
+      insurance: true // Default for now
     },
     bidHistory: [
-      { bidder: "ArtLover123", amount: 285, time: "2 hours ago", current: true },
-      { bidder: "Collector456", amount: 275, time: "4 hours ago", current: false },
-      { bidder: "VintageHunter", amount: 265, time: "6 hours ago", current: false },
-      { bidder: "HandmadeFan", amount: 255, time: "8 hours ago", current: false },
-      { bidder: "TextileExpert", amount: 245, time: "1 day ago", current: false },
-      { bidder: "CraftCollector", amount: 235, time: "1 day ago", current: false },
-      { bidder: "ArtisanLover", amount: 225, time: "1 day ago", current: false },
-      { bidder: "HeritageSeeker", amount: 150, time: "2 days ago", current: false }
+      // Mock bid history for now - would need to fetch from separate API endpoint
+      { bidder: "TopBidder", amount: auctionData.currentPrice, time: "Latest", current: true }
     ],
-    specifications: [
-      { label: "Material", value: "100% Pashmina Wool" },
-      { label: "Weave Type", value: "Traditional Hand-woven" },
-      { label: "Pattern", value: "Floral Paisley" },
-      { label: "Colors", value: "Burgundy, Gold, Cream" },
-      { label: "Care Instructions", value: "Dry Clean Only" },
-      { label: "Provenance", value: "Kashmir Valley Workshop" }
+    specifications: auctionData.specifications || [
+      { label: "Material", value: auctionData.materials?.[0] || "Not specified" },
+      { label: "Condition", value: auctionData.condition },
+      { label: "Category", value: auctionData.category.name }
     ],
     relatedItems: [
+      // Mock related items for now - would need to fetch from separate API endpoint
       {
-        id: "2",
-        title: "Silk Kashmiri Scarf",
-        currentBid: 125,
-        image: "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=200&h=150&fit=crop",
-        timeLeft: "1d 8h"
-      },
-      {
-        id: "3",
-        title: "Embroidered Pashmina",
-        currentBid: 195,
-        image: "https://images.unsplash.com/photo-1590736969955-71cc94901144?w=200&h=150&fit=crop",
+        id: "related-1",
+        title: "Similar Item",
+        currentBid: Math.floor(auctionData.currentPrice * 0.8),
+        image: auctionData.images[0]?.url || "",
         timeLeft: "3d 12h"
-      },
-      {
-        id: "4",
-        title: "Traditional Wool Shawl",
-        currentBid: 165,
-        image: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200&h=150&fit=crop",
-        timeLeft: "5d 2h"
       }
     ]
-  };
+  } : null;
+
+  // Show loading state if data is not yet loaded
+  if (loading) {
+    return (
+      <div className="auction-detail loading">
+        <div className="loading-spinner">Loading auction details...</div>
+      </div>
+    );
+  }
+
+  // Show error state if auction not found
+  if (!auction) {
+    return (
+      <div className="auction-detail error">
+        <div className="error-message">Auction not found or failed to load.</div>
+      </div>
+    );
+  }
 
   const handleBidSubmit = () => {
+    if (!auction) return;
+    
     const bid = parseFloat(bidAmount);
     if (bid <= auction.currentBid) {
       alert('Bid must be higher than current bid');

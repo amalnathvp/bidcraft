@@ -3,7 +3,15 @@ const Order = require('../models/Order');
 const Auction = require('../models/Auction');
 const User = require('../models/User');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+
+// Initialize Stripe only if API key is provided
+let stripe = null;
+if (process.env.STRIPE_SECRET_KEY && process.env.STRIPE_SECRET_KEY !== 'your_stripe_secret_key_here') {
+  stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  console.log('✅ Stripe initialized successfully');
+} else {
+  console.log('⚠️ Stripe not initialized - STRIPE_SECRET_KEY not configured');
+}
 
 // @desc    Create payment intent for auction win
 // @route   POST /api/payments/create-intent
@@ -38,6 +46,9 @@ const createPaymentIntent = asyncHandler(async (req, res, next) => {
     // Create payment based on method
     switch (paymentMethod) {
       case 'stripe':
+        if (!stripe) {
+          return next(new AppError('Stripe payment processing is not configured. Please contact administrator.', 503));
+        }
         paymentIntent = await stripe.paymentIntents.create({
           amount: Math.round(totalAmount * 100), // Stripe uses cents
           currency: 'usd',
@@ -135,6 +146,9 @@ const confirmPayment = asyncHandler(async (req, res, next) => {
     
     switch (payment.gateway.name) {
       case 'stripe':
+        if (!stripe) {
+          return next(new AppError('Stripe payment processing is not configured', 503));
+        }
         const intent = await stripe.paymentIntents.retrieve(paymentIntentId);
         paymentConfirmed = intent.status === 'succeeded';
         payment.gateway.responseData = intent;
@@ -275,6 +289,9 @@ const processRefund = asyncHandler(async (req, res, next) => {
     
     switch (payment.gateway.name) {
       case 'stripe':
+        if (!stripe) {
+          return next(new AppError('Stripe payment processing is not configured', 503));
+        }
         refundResult = await stripe.refunds.create({
           payment_intent: payment.gateway.transactionId,
           amount: amount ? Math.round(amount * 100) : undefined
