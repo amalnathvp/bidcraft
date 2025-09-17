@@ -7,8 +7,8 @@ import AcceptableUsePolicy from "../pages/legal/AcceptableUsePolicy";
 import CodeOfConduct from "../pages/legal/CodeOfConduct";
 import DMCAPolicy from "../pages/legal/DMCAPolicy";
 import Legal from "../pages/legal/Legal";
-import PrivacyPolicy from "../pages/legal/PrivacyPolicy";
-import TermsOfService from "../pages/legal/TermsOfService";
+import DataPolicy from "../pages/legal/DataPolicy";
+import UserAgreement from "../pages/legal/UserAgreement";
 import Login from "../pages/Login";
 import Signup from "../pages/Signup";
 
@@ -54,12 +54,12 @@ export const openRoutes = [
           },
           {
             path: "terms-of-service",
-            element: <TermsOfService />,
+            element: <UserAgreement />,
             errorElement: <Error />,
           },
           {
             path: "privacy-policy",
-            element: <PrivacyPolicy />,
+            element: <DataPolicy />,
             errorElement: <Error />,
           },
           {

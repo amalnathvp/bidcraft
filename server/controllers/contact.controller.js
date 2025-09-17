@@ -2,11 +2,27 @@ import { Resend } from "resend";
 import dotenv from "dotenv"
 dotenv.config()
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Check if RESEND_API_KEY is properly configured
+if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === '<resend-api-key>') {
+    console.warn('Warning: RESEND_API_KEY is not properly configured. Email functionality will be disabled.');
+}
+
+const resend = process.env.RESEND_API_KEY && process.env.RESEND_API_KEY !== '<resend-api-key>' 
+    ? new Resend(process.env.RESEND_API_KEY) 
+    : null;
 
 export const handleSendMessage = async (req, res) => {
     try {
         const { name, email, subject, message } = req.body;
+        
+        // Check if resend is properly configured
+        if (!resend) {
+            console.log('Email service not configured. Message received:', { name, email, subject, message });
+            return res.status(200).json({ 
+                message: "Message received successfully (Email service temporarily unavailable)" 
+            });
+        }
+        
         await resend.batch.send([{
             from: `${name} <onboarding@resend.dev>`,
             to: ['hi@ihavetech.com'],
@@ -23,6 +39,7 @@ export const handleSendMessage = async (req, res) => {
         );
         res.status(200).json({ message: "Message sent succesfully" });
     } catch (error) {
+        console.error('Error sending email:', error);
         return res.status(500).json({ error: "Something went wrong from server" })
     }
 

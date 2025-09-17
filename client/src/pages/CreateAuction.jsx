@@ -39,8 +39,14 @@ export const CreateAuction = () => {
 
       navigate(`/auction/${data.newAuction._id}`);
     },
-    onError: (error) =>
-      setError(error?.response?.data?.message || "Something went wrong"),
+    onError: (error) => {
+      console.error("Auction creation failed:", error);
+      const errorMessage = error?.message || 
+                          error?.response?.data?.message || 
+                          error?.response?.data?.error ||
+                          "Failed to create auction. Please try again.";
+      setError(errorMessage);
+    },
   });
 
   const categories = [
@@ -92,10 +98,12 @@ export const CreateAuction = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.itemPhoto) {
-      setError("Please upload an image.");
-      return;
-    }
+    
+    // Image is now optional - remove the requirement
+    // if (!formData.itemPhoto) {
+    //   setError("Please upload an image.");
+    //   return;
+    // }
 
     const start = new Date(formData.itemStartDate);
     const end = new Date(formData.itemEndDate);
@@ -105,6 +113,8 @@ export const CreateAuction = () => {
       return;
     }
 
+    // Clear any existing errors before submitting
+    setError("");
     mutate(formData);
   };
 
@@ -271,7 +281,7 @@ export const CreateAuction = () => {
                   htmlFor="itemPhoto"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Item Photo <span className="text-red-600">*</span>
+                  Item Photo <span className="text-gray-500">(Optional)</span>
                 </label>
                 <div className="space-y-3">
                   <input

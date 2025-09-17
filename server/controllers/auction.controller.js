@@ -6,40 +6,85 @@ import { connectDB } from '../connection.js'
 
 export const createAuction = async (req, res) => {
     try {
+        console.log('=== CREATE AUCTION REQUEST ===');
+        console.log('User ID:', req.user?.id);
+        console.log('Request body:', req.body);
+        console.log('Request file:', req.file ? 'File present' : 'No file');
+        
         await connectDB();
         const { itemName, startingPrice, itemDescription, itemCategory, itemStartDate, itemEndDate } = req.body;
         let imageUrl = '';
 
+        // Validate required fields
+        if (!itemName || !startingPrice || !itemDescription || !itemCategory || !itemEndDate) {
+            console.log('Missing required fields:', {
+                itemName: !!itemName,
+                startingPrice: !!startingPrice, 
+                itemDescription: !!itemDescription,
+                itemCategory: !!itemCategory,
+                itemEndDate: !!itemEndDate
+            });
+            return res.status(400).json({ 
+                message: 'Missing required fields',
+                required: ['itemName', 'startingPrice', 'itemDescription', 'itemCategory', 'itemEndDate'],
+                received: { itemName, startingPrice, itemDescription, itemCategory, itemEndDate }
+            });
+        }
+
+        // Handle image upload with better error handling
         if (req.file) {
             try {
                 imageUrl = await uploadImage(req.file);
+                console.log('Image uploaded successfully:', imageUrl);
             } catch (error) {
-                return res.status(500).json({ message: 'Error uploading image to Cloudinary', error: error.message });
+                console.warn('Image upload failed, continuing without image:', error.message);
+                // Don't fail the entire auction creation if image upload fails
+                // Just log the warning and continue with empty imageUrl
+                imageUrl = '';
             }
         }
 
         const start = itemStartDate ? new Date(itemStartDate) : new Date();
         const end = new Date(itemEndDate);
+        
+        console.log('Date validation:', { start, end, valid: end > start });
+        
         if (end <= start) {
             return res.status(400).json({ message: 'Auction end date must be after start date' });
         }
 
-        const newAuction = new Product({
+        const auctionData = {
             itemName,
-            startingPrice,
-            currentPrice: startingPrice,
+            startingPrice: Number(startingPrice),
+            currentPrice: Number(startingPrice),
             itemDescription,
             itemCategory,
             itemPhoto: imageUrl,
             itemStartDate: start,
             itemEndDate: end,
             seller: req.user.id,
-        });
+        };
+        
+        console.log('Creating auction with data:', auctionData);
+        
+        const newAuction = new Product(auctionData);
         await newAuction.save();
+        
+        console.log('Auction created successfully:', newAuction._id);
 
-        res.status(201).json({ message: 'Auction created successfully', newAuction });
+        res.status(201).json({ 
+            message: 'Auction created successfully', 
+            newAuction,
+            imageUploadStatus: imageUrl ? 'success' : 'skipped'
+        });
     } catch (error) {
-        res.status(500).json({ message: 'Error creating auction', error: error.message });
+        console.error('Error creating auction:', error);
+        console.error('Error stack:', error.stack);
+        res.status(500).json({ 
+            message: 'Error creating auction', 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 

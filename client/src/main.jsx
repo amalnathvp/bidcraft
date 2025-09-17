@@ -9,9 +9,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { openRoutes } from "./routers/openRoutes.jsx";
 import InitAuth from "./init/InitAuth.jsx";
 import { adminRouter } from "./routers/adminRouter.jsx";
+import { buyerRoutes } from "./routers/buyerRoutes.jsx";
 
 const queryClient = new QueryClient();
-const router = createBrowserRouter([...adminRouter,...protectedRoutes, ...openRoutes]);
+const router = createBrowserRouter([...adminRouter,...protectedRoutes, ...buyerRoutes, ...openRoutes]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

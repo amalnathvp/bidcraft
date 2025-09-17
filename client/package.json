@@ -5,7 +5,10 @@
   "type": "module",
   "description": "Frontend of Auction Web App",
   "scripts": {
-    "dev": "vite --host",
+    "dev": "vite --host 127.0.0.1",
+    "dev:no-hmr": "cross-env DISABLE_HMR=true vite --host 127.0.0.1",
+    "dev:polling": "vite --host 127.0.0.1 --force",
+    "dev:safe": "cross-env DISABLE_HMR=true vite --host 127.0.0.1 --force",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
@@ -28,6 +31,7 @@
     "@types/react-dom": "^19.1.5",
     "@vitejs/plugin-react": "^4.5.0",
     "autoprefixer": "^10.4.21",
+    "cross-env": "^10.0.0",
     "eslint": "^9.27.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",

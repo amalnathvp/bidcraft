@@ -77,7 +77,17 @@ export const createAuction = async (data) => {
         );
         return res.data;
     } catch (error) {
-        console.log("Error creating auction", error.message);
+        console.error("Error creating auction:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Error status:", error.response?.status);
+        
+        // Throw the error with more details for the UI to handle
+        throw new Error(
+            error.response?.data?.message || 
+            error.response?.data?.error || 
+            error.message || 
+            "Failed to create auction"
+        );
     }
 }
 
