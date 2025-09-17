@@ -4,9 +4,6 @@
     <meta charset="UTF-8" />
     <!-- <link rel="icon" type="image/svg+xml" href="/vite.svg" /> -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Brave browser compatibility -->
-    <meta name="brave-ads" content="allow" />
-    <meta name="brave-tracker" content="allow" />
     <title>Online Auction - by Avnish Kumar</title>
 
     <!-- SEO Meta Tags -->
@@ -45,25 +42,6 @@
     />
     <!-- <meta name="twitter:image" content="https://yourdomain.com/images/preview.jpg" /> -->
 
-    <!-- AdSense script with error handling for ad blockers -->
-    <script>
-      // Check if ad blockers are present and load AdSense conditionally
-      (function() {
-        try {
-          const script = document.createElement('script');
-          script.async = true;
-          script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9347518247329906';
-          script.crossOrigin = 'anonymous';
-          script.onerror = function() {
-            console.log('AdSense blocked or failed to load - continuing without ads');
-          };
-          document.head.appendChild(script);
-        } catch (e) {
-          console.log('AdSense initialization failed - continuing without ads');
-        }
-      })();
-    </script>
-    
     <!-- WebSocket Error Suppression for Development -->
     <script src="/ws-error-handler.js"></script>
   </head>
@@ -73,13 +51,12 @@
       <noscript>
         <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
           <h1>JavaScript Required</h1>
-          <p>This application requires JavaScript to run. Please enable JavaScript in your browser or check if any ad blockers are interfering with the page loading.</p>
-          <p>If you're using Brave browser, try disabling Shields for this site.</p>
+          <p>This application requires JavaScript to run. Please enable JavaScript in your browser.</p>
         </div>
       </noscript>
       <div id="loading-fallback" style="display: none; text-align: center; padding: 50px; font-family: Arial, sans-serif;">
         <h2>Loading...</h2>
-        <p>If this message persists, please check your browser's console for errors or try disabling ad blockers.</p>
+        <p>If this message persists, please check your browser's console for errors.</p>
       </div>
     </div>
     <script type="module" src="/src/main.jsx"></script>

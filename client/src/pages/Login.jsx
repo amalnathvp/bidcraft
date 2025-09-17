@@ -20,7 +20,7 @@ const Login = () => {
     e.preventDefault();
     try {
       await dispatch(login(formData)).unwrap();
-      navigate("/");
+      navigate("/seller");
     } catch (error) {
       console.log("Login Failed", error);
       setIsError(error || "something went wrong");

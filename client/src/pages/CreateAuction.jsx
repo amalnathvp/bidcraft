@@ -16,7 +16,7 @@ export const CreateAuction = () => {
     startingPrice: "",
     itemStartDate: "",
     itemEndDate: "",
-    itemPhoto: "",
+    itemPhotos: [],
   });
 
   const { mutate, isPending } = useMutation({
@@ -29,7 +29,7 @@ export const CreateAuction = () => {
         startingPrice: "",
         itemStartDate: "",
         itemEndDate: "",
-        itemPhoto: "",
+        itemPhotos: [],
       });
       setError("");
       queryClient.invalidateQueries({ queryKey: ["viewAuctions"] });
@@ -75,25 +75,44 @@ export const CreateAuction = () => {
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Check if total files exceed limit
+    if (formData.itemPhotos.length + files.length > 5) {
+      setError("You can upload maximum 5 images");
+      return;
+    }
+
+    const validFiles = [];
+    for (const file of files) {
       const fileSizeMB = file.size / (1024 * 1024);
 
       if (!file.type.startsWith("image/")) {
-        alert("Only image files are allowed.");
+        setError("Only image files are allowed.");
         return;
       }
 
       if (fileSizeMB > 5) {
-        setError(`File size must be less than 5 MB.`);
+        setError(`File ${file.name} size must be less than 5 MB.`);
         return;
       }
 
-      setFormData((prev) => ({
-        ...prev,
-        itemPhoto: file,
-      }));
+      validFiles.push(file);
     }
+
+    setFormData((prev) => ({
+      ...prev,
+      itemPhotos: [...prev.itemPhotos, ...validFiles],
+    }));
+    setError("");
+  };
+
+  const removeImage = (indexToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      itemPhotos: prev.itemPhotos.filter((_, index) => index !== indexToRemove),
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -275,41 +294,70 @@ export const CreateAuction = () => {
                 </div>
               </div>
 
-              {/* Item Photo */}
+              {/* Item Photos */}
               <div>
                 <label
-                  htmlFor="itemPhoto"
+                  htmlFor="itemPhotos"
                   className="block text-sm font-medium text-gray-700 mb-2"
                 >
-                  Item Photo <span className="text-gray-500">(Optional)</span>
+                  Item Photos <span className="text-gray-500">(Optional - Max 5 images)</span>
                 </label>
                 <div className="space-y-3">
                   <input
                     type="file"
-                    id="itemPhoto"
-                    name="itemPhoto"
+                    id="itemPhotos"
+                    name="itemPhotos"
                     onChange={handleFileChange}
                     ref={fileInputRef}
                     accept="image/*"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    multiple
+                    disabled={formData.itemPhotos.length >= 5}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50"
                   />
-                  {formData.itemPhoto && (
+                  
+                  {formData.itemPhotos.length > 0 && (
                     <div className="mt-3">
-                      <p className="text-sm text-gray-600 mb-2">Preview:</p>
-                      <img
-                        src={URL.createObjectURL(formData.itemPhoto)}
-                        alt="Preview"
-                        className="w-32 h-32 object-cover border border-gray-300 rounded-md"
-                      />
+                      <p className="text-sm text-gray-600 mb-3">
+                        Preview ({formData.itemPhotos.length}/5):
+                      </p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                        {formData.itemPhotos.map((photo, index) => (
+                          <div key={index} className="relative">
+                            <img
+                              src={URL.createObjectURL(photo)}
+                              alt={`Preview ${index + 1}`}
+                              className="w-full h-24 object-cover border border-gray-300 rounded-md"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeImage(index)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                            <p className="text-xs text-gray-500 mt-1 truncate">
+                              {photo.name}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {formData.itemPhotos.length < 5 && (
+                        <p className="text-sm text-blue-600 mt-2">
+                          You can add {5 - formData.itemPhotos.length} more image(s)
+                        </p>
+                      )}
+                      
                       <button
                         type="button"
                         onClick={() => {
-                          setFormData((prev) => ({ ...prev, itemPhoto: "" }));
+                          setFormData((prev) => ({ ...prev, itemPhotos: [] }));
                           fileInputRef.current.value = "";
                         }}
-                        className="mt-2 text-sm text-red-600 hover:underline"
+                        className="mt-3 text-sm text-red-600 hover:underline"
                       >
-                        Remove Image
+                        Remove All Images
                       </button>
                     </div>
                   )}

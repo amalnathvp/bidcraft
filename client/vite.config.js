@@ -15,6 +15,13 @@ export default defineConfig({
     port: 5173,
     strictPort: false, // Allow fallback ports if 5173 is busy
     cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    },
     hmr: process.env.DISABLE_HMR === 'true' ? false : {
       port: 5174, // Use different port for HMR to avoid conflicts
       host: '127.0.0.1',

@@ -10,6 +10,7 @@ import { openRoutes } from "./routers/openRoutes.jsx";
 import InitAuth from "./init/InitAuth.jsx";
 import { adminRouter } from "./routers/adminRouter.jsx";
 import { buyerRoutes } from "./routers/buyerRoutes.jsx";
+import { BuyerAuthProvider } from "./contexts/BuyerAuthContext.jsx";
 
 const queryClient = new QueryClient();
 const router = createBrowserRouter([...adminRouter,...protectedRoutes, ...buyerRoutes, ...openRoutes]);
@@ -18,9 +19,11 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <InitAuth>
-        <RouterProvider router={router} />
-        </InitAuth>
+        <BuyerAuthProvider>
+          <InitAuth>
+            <RouterProvider router={router} />
+          </InitAuth>
+        </BuyerAuthProvider>
       </Provider>
     </QueryClientProvider>
   </React.StrictMode>

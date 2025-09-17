@@ -2,17 +2,30 @@ import { Link } from "react-router";
 
 export default function AuctionCard({ auction }) {
   const daysLeft = Math.ceil(auction.timeLeft / (1000 * 60 * 60 * 24));
+  
+  // Get the first image or use placeholder
+  const displayImage = auction.itemPhotos && auction.itemPhotos.length > 0 
+    ? auction.itemPhotos[0] 
+    : auction.itemPhoto || "https://picsum.photos/300";
+  
+  const imageCount = auction.itemPhotos ? auction.itemPhotos.length : (auction.itemPhoto ? 1 : 0);
+  
   return (
     <div className="bg-white border border-gray-200 rounded-md shadow-sm">
       <div className="relative h-48 overflow-hidden">
         <img
-          src={auction.itemPhoto || "https://picsum.photos/300"}
+          src={displayImage}
           alt={auction.itemName}
           className="object-contain aspect-[4/3] w-96"
         />
         <div className="absolute top-2 right-2 bg-blue-200 px-2 py-1 rounded-md text-xs font-medium">
           {auction.itemCategory}
         </div>
+        {imageCount > 1 && (
+          <div className="absolute bottom-2 right-2 bg-black bg-opacity-60 text-white px-2 py-1 rounded-md text-xs">
+            +{imageCount - 1} more
+          </div>
+        )}
       </div>
 
       <div className="p-4">

@@ -14,15 +14,10 @@ import Signup from "../pages/Signup";
 
 export const openRoutes = [
   {
-    path: "/",
+    path: "/auth",
     element: <OpenLayout />,
     errorElement: <Error />,
     children: [
-      {
-        index: true,
-        element: <Landing />,
-        errorElement: <Error />,
-      },
       {
         path: "login",
         element: <Login />,
@@ -80,5 +75,26 @@ export const openRoutes = [
         ],
       },
     ],
+  },
+  // Standalone routes for auth pages
+  {
+    path: "/login",
+    element: <Login />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/signup", 
+    element: <Signup />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/contact",
+    element: <Contact />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/about",
+    element: <About />,
+    errorElement: <Error />,
   },
 ];

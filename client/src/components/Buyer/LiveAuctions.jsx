@@ -2,38 +2,7 @@ import React from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAuctions } from "../../api/auction.js";
-
-const BuyerHeader = () => (
-  <header className="bg-white shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center h-16">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-orange-900">BidCraft</h1>
-          <span className="ml-2 text-sm text-gray-600 italic">Authentic Handicrafts</span>
-        </div>
-        
-        <nav className="hidden md:flex space-x-8">
-          <Link to="/buyer" className="text-gray-700 hover:text-orange-600">Home</Link>
-          <Link to="/buyer/live-auctions" className="text-orange-600 font-medium">Live Auctions</Link>
-          <Link to="/buyer/sell" className="text-gray-700 hover:text-orange-600">Sell</Link>
-          <Link to="/buyer/categories" className="text-gray-700 hover:text-orange-600">Categories</Link>
-          <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link>
-        </nav>
-
-        <div className="flex items-center">
-          <div className="relative">
-            <button className="flex items-center text-sm bg-orange-100 rounded-full px-3 py-1 text-orange-800">
-              <span className="mr-1">👤</span>
-              arjun ad
-              <span className="ml-1">▼</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-);
+import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 const formatTimeLeft = (endDate) => {
   const now = new Date();
@@ -51,15 +20,28 @@ const formatTimeLeft = (endDate) => {
   return `${minutes}m left`;
 };
 
-const AuctionCard = ({ auction }) => (
-  <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
-    <div className="relative">
-      <img 
-        src={auction.itemPhoto || "/api/placeholder/400/300"} 
-        alt={auction.itemName}
-        className="w-full h-64 object-cover"
-      />
-      <div className="absolute top-3 right-3">
+const AuctionCard = ({ auction }) => {
+  // Get the first image or use placeholder
+  const displayImage = auction.itemPhotos && auction.itemPhotos.length > 0 
+    ? auction.itemPhotos[0] 
+    : auction.itemPhoto || "/api/placeholder/400/300";
+  
+  const imageCount = auction.itemPhotos ? auction.itemPhotos.length : (auction.itemPhoto ? 1 : 0);
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+      <div className="relative">
+        <img 
+          src={displayImage} 
+          alt={auction.itemName}
+          className="w-full h-64 object-cover"
+        />
+        {imageCount > 1 && (
+          <div className="absolute top-3 left-3 bg-black bg-opacity-60 text-white px-2 py-1 rounded-full text-xs">
+            +{imageCount - 1} more
+          </div>
+        )}
+        <div className="absolute top-3 right-3">
         <span className="bg-red-600 text-white px-2 py-1 rounded text-sm font-medium">
           {formatTimeLeft(auction.itemEndDate)}
         </span>
@@ -77,7 +59,7 @@ const AuctionCard = ({ auction }) => (
         </div>
         
         <Link 
-          to={`/buyer/auction/${auction._id}`}
+          to={`/auction/${auction._id}`}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           Place Bid
@@ -85,7 +67,8 @@ const AuctionCard = ({ auction }) => (
       </div>
     </div>
   </div>
-);
+  );
+};
 
 export const LiveAuctions = () => {
   const { data: auctions, isLoading, error } = useQuery({
@@ -95,7 +78,7 @@ export const LiveAuctions = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BuyerHeader />
+      <BuyerNavbar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
@@ -152,7 +135,7 @@ export const LiveAuctions = () => {
             <h3 className="text-xl font-semibold text-gray-900 mb-2">No Live Auctions</h3>
             <p className="text-gray-600 mb-6">There are no active auctions at the moment. Check back soon!</p>
             <Link 
-              to="/buyer" 
+              to="/" 
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
               Back to Home

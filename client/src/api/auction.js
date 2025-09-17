@@ -64,7 +64,13 @@ export const createAuction = async (data) => {
         formData.append("itemCategory", data.itemCategory);
         formData.append("itemStartDate", data.itemStartDate);
         formData.append("itemEndDate", data.itemEndDate);
-        formData.append("itemPhoto", data.itemPhoto);
+        
+        // Append multiple images
+        if (data.itemPhotos && data.itemPhotos.length > 0) {
+            data.itemPhotos.forEach((photo) => {
+                formData.append("itemPhotos", photo);
+            });
+        }
 
         const res = await axios.post(`${VITE_AUCTION_API}`,
             formData,

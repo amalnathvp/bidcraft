@@ -10,6 +10,7 @@ import userAuthRouter from './routes/userAuth.js';
 import userRouter from './routes/user.js';
 import contactRouter from "./routes/contact.js";
 import adminRouter from './routes/admin.js';
+import buyerAuthRouter from './routes/buyerAuth.js';
 
 const port = process.env.PORT || 4000;
 
@@ -29,6 +30,7 @@ app.get('/', async (req, res) => {
     res.json({ msg: 'Welcome to Online Auction System API' });
 });
 app.use('/auth', userAuthRouter)
+app.use('/buyer', buyerAuthRouter)
 app.use('/user', secureRoute, userRouter)
 app.use('/auction', secureRoute, auctionRouter);
 app.use('/contact', contactRouter);

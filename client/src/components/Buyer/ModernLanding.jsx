@@ -2,6 +2,7 @@ import React from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getAuctions } from "../../api/auction.js";
+import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 export const ModernLanding = () => {
   const { data: auctions, isLoading } = useQuery({
@@ -14,35 +15,7 @@ export const ModernLanding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-orange-50 to-white">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-orange-900">BidCraft</h1>
-              <span className="ml-2 text-sm text-gray-600 italic">Authentic Handicrafts</span>
-            </div>
-            
-            <nav className="hidden md:flex space-x-8">
-              <Link to="/" className="text-orange-600 font-medium">Home</Link>
-              <Link to="/buyer/live-auctions" className="text-gray-700 hover:text-orange-600">Live Auctions</Link>
-              <Link to="/buyer/sell" className="text-gray-700 hover:text-orange-600">Sell</Link>
-              <Link to="/buyer/categories" className="text-gray-700 hover:text-orange-600">Categories</Link>
-              <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
-              <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link>
-            </nav>
-
-            <div className="flex items-center">
-              <div className="relative">
-                <button className="flex items-center text-sm bg-orange-100 rounded-full px-3 py-1 text-orange-800">
-                  <span className="mr-1">👤</span>
-                  arjun ad
-                  <span className="ml-1">▼</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+      <BuyerNavbar />
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -62,13 +35,13 @@ export const ModernLanding = () => {
 
             <div className="flex flex-col sm:flex-row gap-4">
               <Link 
-                to="/buyer/live-auctions"
+                to="/live-auctions"
                 className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
               >
                 Start Bidding
               </Link>
               <Link 
-                to="/buyer/live-auctions"
+                to="/live-auctions"
                 className="border-2 border-orange-600 text-orange-600 px-8 py-3 rounded-lg font-semibold hover:bg-orange-50 transition-colors text-center"
               >
                 Explore Auctions
@@ -98,7 +71,7 @@ export const ModernLanding = () => {
               <div className="bg-black rounded-2xl overflow-hidden shadow-2xl">
                 <div className="relative">
                   <img 
-                    src={featuredAuction.itemPhoto || "/api/placeholder/600/400"} 
+                    src={featuredAuction.itemPhotos && featuredAuction.itemPhotos.length > 0 ? featuredAuction.itemPhotos[0] : featuredAuction.itemPhoto || "/api/placeholder/600/400"} 
                     alt={featuredAuction.itemName}
                     className="w-full h-80 object-cover"
                   />

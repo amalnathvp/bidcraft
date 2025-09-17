@@ -50,11 +50,30 @@ export const ViewAuction = () => {
           <div className="space-y-4 grid grid-cols-1 place-items-center content-start">
             <div className="max-w-xl aspect-square bg-white rounded-md shadow-md border border-gray-200 overflow-hidden flex items-center justify-center">
               <img
-                src={data.itemPhoto || "https://picsum.photos/601"}
+                src={data.itemPhotos && data.itemPhotos.length > 0 ? data.itemPhotos[0] : data.itemPhoto || "https://picsum.photos/601"}
                 alt={data.itemName}
                 className="h-full w-full object-fill"
               />
             </div>
+            {/* Additional Images */}
+            {data.itemPhotos && data.itemPhotos.length > 1 && (
+              <div className="grid grid-cols-4 gap-2 max-w-xl">
+                {data.itemPhotos.slice(1, 5).map((photo, index) => (
+                  <div key={index} className="aspect-square bg-white rounded border border-gray-200 overflow-hidden">
+                    <img
+                      src={photo}
+                      alt={`${data.itemName} view ${index + 2}`}
+                      className="h-full w-full object-cover cursor-pointer hover:opacity-80"
+                    />
+                  </div>
+                ))}
+                {data.itemPhotos.length > 5 && (
+                  <div className="aspect-square bg-gray-100 rounded border border-gray-200 flex items-center justify-center">
+                    <span className="text-gray-600 text-sm">+{data.itemPhotos.length - 5}</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Details Section */}

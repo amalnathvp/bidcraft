@@ -9,11 +9,11 @@ export const createAuction = async (req, res) => {
         console.log('=== CREATE AUCTION REQUEST ===');
         console.log('User ID:', req.user?.id);
         console.log('Request body:', req.body);
-        console.log('Request file:', req.file ? 'File present' : 'No file');
+        console.log('Request files:', req.files ? `${req.files.length} files present` : 'No files');
         
         await connectDB();
         const { itemName, startingPrice, itemDescription, itemCategory, itemStartDate, itemEndDate } = req.body;
-        let imageUrl = '';
+        let imageUrls = [];
 
         // Validate required fields
         if (!itemName || !startingPrice || !itemDescription || !itemCategory || !itemEndDate) {
@@ -31,16 +31,17 @@ export const createAuction = async (req, res) => {
             });
         }
 
-        // Handle image upload with better error handling
-        if (req.file) {
+        // Handle multiple image uploads with better error handling
+        if (req.files && req.files.length > 0) {
             try {
-                imageUrl = await uploadImage(req.file);
-                console.log('Image uploaded successfully:', imageUrl);
+                console.log(`Uploading ${req.files.length} images...`);
+                const uploadPromises = req.files.map(file => uploadImage(file));
+                imageUrls = await Promise.all(uploadPromises);
+                console.log('Images uploaded successfully:', imageUrls);
             } catch (error) {
-                console.warn('Image upload failed, continuing without image:', error.message);
-                // Don't fail the entire auction creation if image upload fails
-                // Just log the warning and continue with empty imageUrl
-                imageUrl = '';
+                console.warn('Some images failed to upload, continuing with uploaded ones:', error.message);
+                // Filter out any failed uploads (null/undefined values)
+                imageUrls = imageUrls.filter(url => url);
             }
         }
 
@@ -59,7 +60,7 @@ export const createAuction = async (req, res) => {
             currentPrice: Number(startingPrice),
             itemDescription,
             itemCategory,
-            itemPhoto: imageUrl,
+            itemPhotos: imageUrls,
             itemStartDate: start,
             itemEndDate: end,
             seller: req.user.id,
@@ -75,7 +76,7 @@ export const createAuction = async (req, res) => {
         res.status(201).json({ 
             message: 'Auction created successfully', 
             newAuction,
-            imageUploadStatus: imageUrl ? 'success' : 'skipped'
+            imageUploadStatus: imageUrls.length > 0 ? `${imageUrls.length} images uploaded` : 'no images'
         });
     } catch (error) {
         console.error('Error creating auction:', error);
@@ -93,7 +94,7 @@ export const showAuction = async (req, res) => {
         await connectDB();
         const auction = await Product.find({ itemEndDate: { $gt: new Date() } })
             .populate("seller", "name")
-            .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhoto seller")
+            .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhotos seller")
             .sort({ createdAt: -1 });
         const formatted = auction.map(auction => ({
             _id: auction._id,
@@ -104,7 +105,7 @@ export const showAuction = async (req, res) => {
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
-            itemPhoto: auction.itemPhoto,
+            itemPhotos: auction.itemPhotos,
         }));
 
         res.status(200).json(formatted);
@@ -189,7 +190,7 @@ export const dashboardData = async (req, res) => {
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
-            itemPhoto: auction.itemPhoto,
+            itemPhotos: auction.itemPhotos,
         }));
 
         const userAuction = await Product.find({ seller: userObjectId }).populate("seller", "name").sort({ createdAt: -1 }).limit(3);
@@ -202,7 +203,7 @@ export const dashboardData = async (req, res) => {
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
-            itemPhoto: auction.itemPhoto,
+            itemPhotos: auction.itemPhotos,
         }));
 
         return res.status(200).json({ totalAuctions, userAuctionCount, activeAuctions, latestAuctions, latestUserAuctions })
@@ -217,7 +218,7 @@ export const myAuction = async (req, res) => {
         await connectDB();
         const auction = await Product.find({ seller: req.user.id })
             .populate("seller", "name")
-            .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhoto seller")
+            .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhotos seller")
             .sort({ createdAt: -1 });
         const formatted = auction.map(auction => ({
             _id: auction._id,
@@ -228,7 +229,7 @@ export const myAuction = async (req, res) => {
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
-            itemPhoto: auction.itemPhoto,
+            itemPhotos: auction.itemPhotos,
         }));
 
         res.status(200).json(formatted);

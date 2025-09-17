@@ -1,9 +1,22 @@
 import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
+    // Basic info (common for all users)
     name: {
         type: String,
         required: true
+    },
+    firstName: {
+        type: String,
+        required: function() {
+            return this.role === 'buyer';
+        }
+    },
+    lastName: {
+        type: String,
+        required: function() {
+            return this.role === 'buyer';
+        }
     },
     email: {
         type: String,
@@ -14,14 +27,33 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    phone: {
+        type: String,
+    },
     avatar: {
         type: String,
     },
-     role: {
+    role: {
         type: String,
-        enum: ['user', 'admin'],
-        default: 'user',
+        enum: ['seller', 'buyer', 'admin'],
+        default: 'seller',
     },
+    
+    // Buyer-specific fields
+    address: {
+        street: { type: String },
+        city: { type: String },
+        state: { type: String },
+        zipCode: { type: String },
+        country: { type: String }
+    },
+    preferences: {
+        categories: [{ type: String }],
+        priceRange: { type: String },
+        notifications: { type: Boolean, default: true }
+    },
+    
+    // System tracking fields
     ipAddress: {
         type: String
     },

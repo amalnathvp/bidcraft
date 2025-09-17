@@ -9,10 +9,15 @@ import Privacy from "../pages/Privacy";
 
 export const protectedRoutes = [
   {
-    path: "/",
+    path: "/seller",
     element: <MainLayout />,
     errorElement: <Error />,
     children: [
+      {
+        index: true,
+        element: <AuctionList />,
+        errorElement: <Error />,
+      },
       {
         path: "auction",
         element: <AuctionList />,
@@ -33,7 +38,6 @@ export const protectedRoutes = [
         element: <ViewAuction />,
         errorElement: <Error />,
       },
-
       {
         path: "profile",
         element: <Profile />,

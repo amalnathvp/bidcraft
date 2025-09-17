@@ -22,7 +22,7 @@ const Signup = () => {
     e.preventDefault();
     try {
       await dispatch(signup(formData)).unwrap();
-      navigate("/");
+      navigate("/seller");
     } catch (error) {
       console.log("Signup Failed", error);
       setIsError(error || "something went wrong");
@@ -34,7 +34,7 @@ const Signup = () => {
 
   useEffect(() => {
     if (user) {
-      navigate("/");
+      navigate("/seller");
     }
   }, [user, navigate]);
 

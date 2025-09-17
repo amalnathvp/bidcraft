@@ -2,38 +2,7 @@ import React, { useState } from "react";
 import { Link, useParams } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { viewAuction, placeBid } from "../../api/auction.js";
-
-const BuyerHeader = () => (
-  <header className="bg-white shadow-sm">
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div className="flex justify-between items-center h-16">
-        <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-orange-900">BidCraft</h1>
-          <span className="ml-2 text-sm text-gray-600 italic">Authentic Handicrafts</span>
-        </div>
-        
-        <nav className="hidden md:flex space-x-8">
-          <Link to="/buyer" className="text-gray-700 hover:text-orange-600">Home</Link>
-          <Link to="/buyer/live-auctions" className="text-gray-700 hover:text-orange-600">Live Auctions</Link>
-          <Link to="/buyer/sell" className="text-gray-700 hover:text-orange-600">Sell</Link>
-          <Link to="/buyer/categories" className="text-gray-700 hover:text-orange-600">Categories</Link>
-          <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
-          <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link>
-        </nav>
-
-        <div className="flex items-center">
-          <div className="relative">
-            <button className="flex items-center text-sm bg-orange-100 rounded-full px-3 py-1 text-orange-800">
-              <span className="mr-1">👤</span>
-              arjun ad
-              <span className="ml-1">▼</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </header>
-);
+import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 const ImageGallery = ({ images, itemName }) => {
   const [selectedImage, setSelectedImage] = useState(0);
@@ -130,7 +99,7 @@ export const AuctionDetail = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BuyerHeader />
+        <BuyerNavbar />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse">
             <div className="grid lg:grid-cols-2 gap-8">
@@ -150,11 +119,11 @@ export const AuctionDetail = () => {
   if (error || !auction) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <BuyerHeader />
+        <BuyerNavbar />
         <div className="max-w-7xl mx-auto px-4 py-8 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Auction Not Found</h2>
           <p className="text-gray-600 mb-6">The auction you're looking for doesn't exist or has been removed.</p>
-          <Link to="/buyer/live-auctions" className="bg-blue-600 text-white px-6 py-3 rounded-lg">
+          <Link to="/live-auctions" className="bg-blue-600 text-white px-6 py-3 rounded-lg">
             Browse Other Auctions
           </Link>
         </div>
@@ -163,11 +132,11 @@ export const AuctionDetail = () => {
   }
 
   // Prepare images array
-  const auctionImages = auction.itemPhoto ? [auction.itemPhoto] : [];
+  const auctionImages = auction.itemPhotos && auction.itemPhotos.length > 0 ? auction.itemPhotos : ["/api/placeholder/600/600"];
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BuyerHeader />
+      <BuyerNavbar />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-2 gap-12">

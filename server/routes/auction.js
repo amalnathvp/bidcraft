@@ -9,7 +9,7 @@ auctionRouter
 
 auctionRouter
     .get('/', showAuction)
-    .post('/', upload.single('itemPhoto'), createAuction);
+    .post('/', upload.array('itemPhotos', 5), createAuction);
 
 auctionRouter
 .get("/myauction", myAuction)

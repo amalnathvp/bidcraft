@@ -54,7 +54,7 @@ export const Navbar = () => {
         <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between items-center">
             {/* Logo */}
-            <Link to="/" className="flex items-center space-x-2">
+            <Link to="/seller" className="flex items-center space-x-2">
               <RiAuctionLine className="h-6 w-6 text-gray-700 " />
               <span className="text-xl font-bold text-gray-900 ">
                 Online Auction
@@ -265,22 +265,22 @@ const navMenu = [
 const protectedNavLink = [
   {
     name: "Dashboard",
-    link: "/",
+    link: "/seller",
     icon: <MdOutlineDashboard className="mr-3 h-5 w-5" />,
   },
   {
     name: "Create Auction",
-    link: "/create",
+    link: "/seller/create",
     icon: <MdOutlineCreate className="mr-3 h-5 w-5" />,
   },
   {
     name: "View Auction",
-    link: "/auction",
+    link: "/seller/auction",
     icon: <RiAuctionLine className="mr-3 h-5 w-5" />,
   },
   {
     name: "My Auction",
-    link: "/myauction",
+    link: "/seller/myauction",
     icon: <MdAttachMoney className="mr-3 h-5 w-5" />,
   },
   {
@@ -290,12 +290,12 @@ const protectedNavLink = [
   },
   {
     name: "Profile",
-    link: "/profile",
+    link: "/seller/profile",
     icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
   },
   {
     name: "Privacy",
-    link: "/privacy",
+    link: "/seller/privacy",
     icon: <MdOutlinePrivacyTip className="mr-3 h-5 w-5" />,
   },
 ];
