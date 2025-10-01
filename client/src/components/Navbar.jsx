@@ -327,11 +327,6 @@ const protectedNavLink = [
     icon: <MdMailOutline className="mr-3 h-5 w-5" />,
   },
   {
-    name: "Profile",
-    link: "/seller/profile",
-    icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
-  },
-  {
     name: "Privacy",
     link: "/seller/privacy",
     icon: <MdOutlinePrivacyTip className="mr-3 h-5 w-5" />,
@@ -366,5 +361,5 @@ const getNavLinks = (userRole) => {
   if (userRole === 'admin') {
     return adminNavLink;
   }
-  return protectedNavLink.slice(0, 6); // Include Live Auctions, Create, View, My Auction, Notifications
+  return protectedNavLink.slice(0, 7); // Include Live Auctions, Create, View, My Auction, Notifications, Profile
 };

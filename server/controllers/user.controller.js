@@ -58,62 +58,117 @@ export const handleChangePassword = async (req, res) => {
     }
 };
 
-export const updateProfile = async (req, res) => {
+// Get Seller Profile
+export const getSellerProfile = async (req, res) => {
     try {
-        console.log('=== UPDATE PROFILE REQUEST ===');
-        console.log('User ID:', req.user?.id);
-        console.log('User Role:', req.user?.role);
-        console.log('Request body:', req.body);
+        await connectDB();
+        const userId = req.user.id;
+
+        const user = await User.findById(userId).select("-password");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // Calculate profile completion percentage
+        const profileFields = [
+            user.name, user.email, user.phone, user.businessName, 
+            user.businessType, user.businessAddress, user.city, 
+            user.state, user.country, user.description, user.avatar
+        ];
         
+        const completedFields = profileFields.filter(field => field && field.toString().trim()).length;
+        const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
+
+        // Get seller statistics (you can expand this based on your auction model)
+        const stats = {
+            totalAuctions: 0, // You'll need to count from your auction model
+            activeAuctions: 0,
+            completedAuctions: 0,
+            totalRevenue: 0,
+            avgRating: 0,
+            totalReviews: 0
+        };
+
+        res.status(200).json({
+            success: true,
+            user: {
+                ...user.toObject(),
+                completionPercentage,
+                stats
+            }
+        });
+
+    } catch (error) {
+        console.error("Error fetching seller profile:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching profile",
+            error: error.message
+        });
+    }
+};
+
+// Update Seller Profile
+export const updateSellerProfile = async (req, res) => {
+    try {
         await connectDB();
         const userId = req.user.id;
         const {
             name,
             email,
             phone,
-            address,
+            businessName,
+            businessType,
+            businessAddress,
             city,
             state,
             zipCode,
             country,
-            businessName,
-            businessType,
             taxId,
             website,
             description,
-            socialMedia
+            socialMedia,
+            avatar
         } = req.body;
 
         // Find the user
         const user = await User.findById(userId);
         if (!user) {
-            console.log('User not found:', userId);
-            return res.status(404).json({ message: "User not found" });
+            return res.status(404).json({ 
+                success: false,
+                message: "User not found" 
+            });
         }
 
-        console.log('Current user:', { id: user._id, name: user.name, email: user.email });
+        // Validate email uniqueness if changed
+        if (email && email !== user.email) {
+            const existingUser = await User.findOne({ email, _id: { $ne: userId } });
+            if (existingUser) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Email already exists"
+                });
+            }
+        }
 
         // Update user fields
         const updateData = {
             name: name || user.name,
             email: email || user.email,
             phone: phone || user.phone,
+            businessName: businessName || user.businessName,
+            businessType: businessType || user.businessType,
+            businessAddress: businessAddress || user.businessAddress,
             city: city || user.city,
             state: state || user.state,
             zipCode: zipCode || user.zipCode,
             country: country || user.country,
-            businessName: businessName || user.businessName,
-            businessType: businessType || user.businessType,
             taxId: taxId || user.taxId,
             website: website || user.website,
             description: description || user.description,
+            avatar: avatar || user.avatar,
             updatedAt: new Date()
         };
-
-        // Handle address separately for sellers (flat structure)
-        if (address !== undefined) {
-            updateData.businessAddress = address; // Use businessAddress for sellers
-        }
 
         // Handle social media object
         if (socialMedia !== undefined) {
@@ -124,24 +179,81 @@ export const updateProfile = async (req, res) => {
             };
         }
 
-        console.log('Update data:', updateData);
-
         const updatedUser = await User.findByIdAndUpdate(
             userId,
             updateData,
             { new: true, runValidators: true }
         ).select("-password");
 
-        console.log('Profile updated successfully');
+        // Calculate new completion percentage
+        const profileFields = [
+            updatedUser.name, updatedUser.email, updatedUser.phone, 
+            updatedUser.businessName, updatedUser.businessType, 
+            updatedUser.businessAddress, updatedUser.city, 
+            updatedUser.state, updatedUser.country, updatedUser.description, 
+            updatedUser.avatar
+        ];
+        
+        const completedFields = profileFields.filter(field => field && field.toString().trim()).length;
+        const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
+
         res.status(200).json({
+            success: true,
             message: "Profile updated successfully",
-            user: updatedUser
+            user: {
+                ...updatedUser.toObject(),
+                completionPercentage
+            }
         });
 
     } catch (error) {
-        console.error("Error updating profile:", error);
+        console.error("Error updating seller profile:", error);
         res.status(500).json({
+            success: false,
             message: "Error updating profile",
+            error: error.message
+        });
+    }
+};
+
+// Upload Profile Image
+export const uploadProfileImage = async (req, res) => {
+    try {
+        await connectDB();
+        const userId = req.user.id;
+
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No image file provided"
+            });
+        }
+
+        // Update user avatar with the uploaded image URL
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            { avatar: req.file.path }, // Cloudinary URL
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        if (!updatedUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: "Profile image updated successfully",
+            avatar: req.file.path
+        });
+
+    } catch (error) {
+        console.error("Error uploading profile image:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error uploading image",
             error: error.message
         });
     }
