@@ -52,6 +52,10 @@ const userSchema = new mongoose.Schema({
         priceRange: { type: String },
         notifications: { type: Boolean, default: true }
     },
+    watchlist: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product'
+    }],
     
     // System tracking fields
     ipAddress: {

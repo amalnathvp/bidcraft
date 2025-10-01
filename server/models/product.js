@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const bidSchema = new mongoose.Schema({
     bidder: { type: mongoose.Schema.ObjectId, ref: 'User', required: true },
-    bidAmount: { type: Number, required: true },
-    bidTime: { type: Date, default: Date.now }
+    amount: { type: Number, required: true },
+    timestamp: { type: Date, default: Date.now }
 });
 
 const productSchema = new mongoose.Schema({
@@ -31,6 +31,10 @@ const productSchema = new mongoose.Schema({
         type: Number,
         default: 0,
     },
+    bidCount: {
+        type: Number,
+        default: 0,
+    },
     itemStartDate: {
         type: Date,
         default: Date.now,
@@ -45,6 +49,12 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     bids: [bidSchema],
+    bidHistory: [bidSchema], // Alternative name used in controller
+    highestBidder: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        default: null
+    },
     winner: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',

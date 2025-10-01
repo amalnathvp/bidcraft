@@ -46,7 +46,7 @@ export default function AuctionCard({ auction }) {
 
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Bids:</span>
-            <span className="text-sm font-medium">{auction.bidsCount}</span>
+            <span className="text-sm font-medium">{auction.bidCount || 0}</span>
           </div>
 
           <div className="flex justify-between items-center">
@@ -61,7 +61,7 @@ export default function AuctionCard({ auction }) {
           <p className="text-xs text-gray-500 mb-3">
             Seller: {auction?.sellerName || auction?.seller?.name}
           </p>
-          <Link to={`/auction/${auction._id}`}>
+          <Link to={`/seller/auction-detail/${auction._id}`}>
             <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition-colors text-sm font-medium">
               View Details
             </button>

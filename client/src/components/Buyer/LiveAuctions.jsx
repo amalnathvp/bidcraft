@@ -1,7 +1,9 @@
 import React from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getAuctions } from "../../api/auction.js";
+import { getBuyerAuctions } from "../../api/buyerAuction.js";
+import { getMyAuctions } from "../../api/auction.js";
+import { useSellerAuth } from "../../contexts/SellerAuthContext.jsx";
 import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 const formatTimeLeft = (endDate) => {
@@ -20,7 +22,7 @@ const formatTimeLeft = (endDate) => {
   return `${minutes}m left`;
 };
 
-const AuctionCard = ({ auction }) => {
+const AuctionCard = ({ auction, isSellerRoute = false }) => {
   // Get the first image or use placeholder
   const displayImage = auction.itemPhotos && auction.itemPhotos.length > 0 
     ? auction.itemPhotos[0] 
@@ -50,19 +52,28 @@ const AuctionCard = ({ auction }) => {
     
     <div className="p-4">
       <h3 className="text-xl font-bold text-gray-900 mb-2">{auction.itemName}</h3>
-      <p className="text-gray-600 text-sm mb-1">by {auction.sellerName}</p>
+      {!isSellerRoute && (
+        <p className="text-gray-600 text-sm mb-1">by {auction.sellerName}</p>
+      )}
       
       <div className="flex justify-between items-center mt-4">
         <div>
           <p className="text-2xl font-bold text-gray-900">${auction.currentPrice}</p>
-          <p className="text-sm text-gray-500">{auction.bidsCount} bids</p>
+          <p className="text-sm text-gray-500">
+            {auction.bidCount || 0} bids
+            {isSellerRoute && auction.bidCount > 0 && (
+              <span className="ml-2 text-green-600 font-medium">
+                💰 +${(auction.currentPrice - auction.startingPrice) || 0}
+              </span>
+            )}
+          </p>
         </div>
         
         <Link 
-          to={`/auction/${auction._id}`}
+          to={isSellerRoute ? `/seller/auction/${auction._id}` : `/auction/${auction._id}`}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
-          Place Bid
+          {isSellerRoute ? "Manage Auction" : "Place Bid"}
         </Link>
       </div>
     </div>
@@ -71,20 +82,77 @@ const AuctionCard = ({ auction }) => {
 };
 
 export const LiveAuctions = () => {
-  const { data: auctions, isLoading, error } = useQuery({
-    queryKey: ["liveAuctions"],
-    queryFn: getAuctions,
+  const location = useLocation();
+  const { isAuthenticated: isSellerAuthenticated } = useSellerAuth();
+  const isSellerRoute = location.pathname.includes('/seller/');
+  
+  // For seller routes, fetch their auctions; for buyer routes, fetch all auctions
+  const { data: allAuctions, isLoading, error } = useQuery({
+    queryKey: isSellerRoute ? ["myLiveAuctions"] : ["liveAuctions"],
+    queryFn: isSellerRoute ? getMyAuctions : getBuyerAuctions,
+    enabled: isSellerRoute ? isSellerAuthenticated : true,
   });
+
+  // Filter for only active auctions
+  const auctions = React.useMemo(() => {
+    if (!allAuctions) return [];
+    
+    const activeAuctions = allAuctions.filter(auction => {
+      const endDate = new Date(auction.itemEndDate);
+      const now = new Date();
+      const isActive = endDate > now;
+      
+      // Debug logging for seller routes
+      if (isSellerRoute) {
+        console.log('Auction filter check:', {
+          itemName: auction.itemName,
+          endDate: endDate.toISOString(),
+          now: now.toISOString(),
+          isActive,
+          timeLeft: endDate - now
+        });
+      }
+      
+      return isActive;
+    });
+    
+    if (isSellerRoute) {
+      console.log('Seller live auctions:', {
+        total: allAuctions?.length || 0,
+        active: activeAuctions.length,
+        auctions: activeAuctions.map(a => ({ name: a.itemName, bids: a.bidCount || 0 }))
+      });
+    }
+    
+    return activeAuctions;
+  }, [allAuctions, isSellerRoute]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <BuyerNavbar />
+      {!isSellerRoute && <BuyerNavbar />}
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Live Auctions</h1>
-          <p className="text-gray-600">Don't miss out on these exceptional pieces</p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            {isSellerRoute ? 'Your Live Auctions' : 'Live Auctions'}
+            {isSellerRoute && auctions && (
+              <span className="text-lg font-normal text-gray-500 ml-2">({auctions.length} active)</span>
+            )}
+          </h1>
+          <p className="text-gray-600">
+            {isSellerRoute 
+              ? 'Monitor your active auctions and track bidding activity in real-time'
+              : 'Don\'t miss out on these exceptional pieces'
+            }
+          </p>
+          {isSellerRoute && auctions && auctions.length > 0 && (
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-blue-800 text-sm">
+                📊 <strong>Quick Stats:</strong> {auctions.reduce((total, auction) => total + (auction.bidCount || 0), 0)} total bids across all active auctions
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Loading State */}
@@ -121,24 +189,41 @@ export const LiveAuctions = () => {
 
         {/* Auctions Grid */}
         {auctions && auctions.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {auctions.map((auction) => (
-              <AuctionCard key={auction._id} auction={auction} />
-            ))}
-          </div>
+          <>
+            {isSellerRoute && (
+              <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                <h3 className="text-green-800 font-semibold mb-2">🎯 Your Active Auctions</h3>
+                <p className="text-green-700 text-sm">
+                  These are your currently active auctions. Monitor bids and manage your listings below.
+                </p>
+              </div>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {auctions.map((auction) => (
+                <AuctionCard key={auction._id} auction={auction} isSellerRoute={isSellerRoute} />
+              ))}
+            </div>
+          </>
         )}
 
         {/* Empty State */}
         {auctions && auctions.length === 0 && (
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">🏺</div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Live Auctions</h3>
-            <p className="text-gray-600 mb-6">There are no active auctions at the moment. Check back soon!</p>
+            <div className="text-6xl mb-4">{isSellerRoute ? '📦' : '🏺'}</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">
+              {isSellerRoute ? 'No Active Auctions' : 'No Live Auctions'}
+            </h3>
+            <p className="text-gray-600 mb-6">
+              {isSellerRoute 
+                ? 'You don\'t have any active auctions at the moment. Create a new auction to get started!'
+                : 'There are no active auctions at the moment. Check back soon!'
+              }
+            </p>
             <Link 
-              to="/" 
+              to={isSellerRoute ? "/seller/create" : "/"} 
               className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
             >
-              Back to Home
+              {isSellerRoute ? 'Create New Auction' : 'Back to Home'}
             </Link>
           </div>
         )}

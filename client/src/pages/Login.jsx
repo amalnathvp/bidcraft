@@ -1,42 +1,63 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { login } from "../store/auth/authSlice";
+import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
 import { Link } from "react-router";
 import LoadingScreen from "../components/LoadingScreen";
 
 const Login = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { seller, isAuthenticated, isLoading, login } = useSellerAuth();
 
-  const { user, loading } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
   const [isError, setIsError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Seller login API call
+  const loginSeller = async (loginData) => {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(loginData),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
+    }
+
+    return response.json();
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
-      await dispatch(login(formData)).unwrap();
+      const response = await loginSeller(formData);
+      login(response.user); // Update the seller auth context
       navigate("/seller");
     } catch (error) {
       console.log("Login Failed", error);
-      setIsError(error || "something went wrong");
+      setIsError(error.message || "Login failed");
       setTimeout(() => {
         setIsError("");
       }, 10000);
     }
+    setIsSubmitting(false);
   };
 
   useEffect(() => {
-    if (user) {
-      navigate("/");
+    if (isAuthenticated) {
+      navigate("/seller");
     }
-  }, [user, navigate]);
+  }, [isAuthenticated, navigate]);
 
-  if (loading) return <LoadingScreen />;
+  if (isLoading) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -100,10 +121,10 @@ const Login = () => {
 
               <button
                 type="submit"
-                disabled={loading}
+                disabled={isSubmitting}
                 className="w-full bg-indigo-800 text-white py-2 px-4 rounded-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {loading ? "Logging in..." : "Login"}
+                {isSubmitting ? "Logging in..." : "Login"}
               </button>
             </form>
 

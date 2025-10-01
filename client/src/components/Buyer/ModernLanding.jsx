@@ -1,13 +1,13 @@
 import React from "react";
 import { Link } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { getAuctions } from "../../api/auction.js";
+import { getBuyerAuctions } from "../../api/buyerAuction.js";
 import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 export const ModernLanding = () => {
   const { data: auctions, isLoading } = useQuery({
     queryKey: ["featuredAuctions"],
-    queryFn: getAuctions,
+    queryFn: getBuyerAuctions,
   });
 
   const featuredAuction = auctions?.[0]; // Get the first auction as featured

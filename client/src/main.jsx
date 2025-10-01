@@ -11,19 +11,33 @@ import InitAuth from "./init/InitAuth.jsx";
 import { adminRouter } from "./routers/adminRouter.jsx";
 import { buyerRoutes } from "./routers/buyerRoutes.jsx";
 import { BuyerAuthProvider } from "./contexts/BuyerAuthContext.jsx";
+import { SellerAuthProvider } from "./contexts/SellerAuthContext.jsx";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes for better persistence
+      retry: 2,
+      retryDelay: 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: true,
+    },
+  },
+});
 const router = createBrowserRouter([...adminRouter,...protectedRoutes, ...buyerRoutes, ...openRoutes]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <Provider store={store}>
-        <BuyerAuthProvider>
-          <InitAuth>
-            <RouterProvider router={router} />
-          </InitAuth>
-        </BuyerAuthProvider>
+        <SellerAuthProvider>
+          <BuyerAuthProvider>
+            <InitAuth>
+              <RouterProvider router={router} />
+            </InitAuth>
+          </BuyerAuthProvider>
+        </SellerAuthProvider>
       </Provider>
     </QueryClientProvider>
   </React.StrictMode>

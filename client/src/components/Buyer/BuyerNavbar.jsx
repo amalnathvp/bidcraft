@@ -25,7 +25,9 @@ export const BuyerNavbar = () => {
           <nav className="hidden md:flex space-x-8">
             <Link to="/" className="text-gray-700 hover:text-orange-600">Home</Link>
             <Link to="/live-auctions" className="text-gray-700 hover:text-orange-600">Live Auctions</Link>
-            <Link to="/login" className="text-gray-700 hover:text-orange-600">Sell</Link>
+            {!isAuthenticated && (
+              <Link to="/login" className="text-gray-700 hover:text-orange-600">Sell</Link>
+            )}
             <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
             <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link>
           </nav>

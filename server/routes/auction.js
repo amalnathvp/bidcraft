@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAuction, showAuction, auctionById, placeBid, dashboardData, myAuction } from '../controllers/auction.controller.js';
+import { createAuction, showAuction, auctionById, placeBid, dashboardData, myAuction, updateAuction, deleteAuction } from '../controllers/auction.controller.js';
 import upload from '../middleware/multer.js';
 
 const auctionRouter = express.Router();
@@ -17,6 +17,8 @@ auctionRouter
 auctionRouter
     .get('/:id', auctionById)
     .post('/:id', placeBid)
+    .put('/:id', updateAuction)
+    .delete('/:id', deleteAuction)
 
 
 export default auctionRouter;

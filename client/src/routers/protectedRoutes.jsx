@@ -6,6 +6,9 @@ import { CreateAuction } from "../pages/CreateAuction";
 import { MyAuction } from "../pages/MyAuction";
 import Profile from "../pages/Profile";
 import Privacy from "../pages/Privacy";
+import { AuctionDetail } from "../components/Buyer/AuctionDetail.jsx";
+import { LiveAuctions } from "../components/Buyer/LiveAuctions.jsx";
+import { SellerNotifications } from "../pages/SellerNotifications.jsx";
 
 export const protectedRoutes = [
   {
@@ -24,8 +27,23 @@ export const protectedRoutes = [
         errorElement: <Error />,
       },
       {
+        path: "live-auctions",
+        element: <LiveAuctions />,
+        errorElement: <Error />,
+      },
+      {
+        path: "auction-detail/:id",
+        element: <AuctionDetail />,
+        errorElement: <Error />,
+      },
+      {
         path: "myauction",
         element: <MyAuction />,
+        errorElement: <Error />,
+      },
+      {
+        path: "notifications",
+        element: <SellerNotifications />,
         errorElement: <Error />,
       },
       {

@@ -101,7 +101,7 @@ export const showAuction = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidsCount: auction.bids.length,
+            bidCount: auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -186,7 +186,7 @@ export const dashboardData = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidsCount: auction.bids.length,
+            bidCount: auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -199,7 +199,7 @@ export const dashboardData = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidsCount: auction.bids.length,
+            bidCount: auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -225,7 +225,7 @@ export const myAuction = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidsCount: auction.bids.length,
+            bidCount: auction.bids.length, // Changed from bidsCount to bidCount for consistency
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -235,5 +235,83 @@ export const myAuction = async (req, res) => {
         res.status(200).json(formatted);
     } catch (error) {
         return res.status(500).json({ message: 'Error fetching auctions', error: error.message });
+    }
+}
+
+// Update auction
+export const updateAuction = async (req, res) => {
+    try {
+        await connectDB();
+        const { id } = req.params;
+        const { itemName, itemDescription, startingPrice, itemCategory, itemEndDate } = req.body;
+
+        // Find the auction and verify ownership
+        const auction = await Product.findById(id);
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found' });
+        }
+
+        if (auction.seller.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'You can only edit your own auctions' });
+        }
+
+        // Check if auction has bids - if so, only allow limited edits
+        if (auction.bids.length > 0) {
+            return res.status(400).json({ 
+                message: 'Cannot edit auction that already has bids' 
+            });
+        }
+
+        // Update the auction
+        const updatedAuction = await Product.findByIdAndUpdate(
+            id,
+            {
+                itemName: itemName || auction.itemName,
+                itemDescription: itemDescription || auction.itemDescription,
+                startingPrice: startingPrice || auction.startingPrice,
+                currentPrice: startingPrice || auction.currentPrice,
+                itemCategory: itemCategory || auction.itemCategory,
+                itemEndDate: itemEndDate || auction.itemEndDate,
+            },
+            { new: true }
+        );
+
+        res.status(200).json({ 
+            message: 'Auction updated successfully', 
+            auction: updatedAuction 
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Error updating auction', error: error.message });
+    }
+}
+
+// Delete auction
+export const deleteAuction = async (req, res) => {
+    try {
+        await connectDB();
+        const { id } = req.params;
+
+        // Find the auction and verify ownership
+        const auction = await Product.findById(id);
+        if (!auction) {
+            return res.status(404).json({ message: 'Auction not found' });
+        }
+
+        if (auction.seller.toString() !== req.user.id) {
+            return res.status(403).json({ message: 'You can only delete your own auctions' });
+        }
+
+        // Check if auction has bids - if so, don't allow deletion
+        if (auction.bids.length > 0) {
+            return res.status(400).json({ 
+                message: 'Cannot delete auction that has bids' 
+            });
+        }
+
+        await Product.findByIdAndDelete(id);
+
+        res.status(200).json({ message: 'Auction deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Error deleting auction', error: error.message });
     }
 }

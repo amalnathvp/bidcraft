@@ -5,12 +5,14 @@ import cookieParser from "cookie-parser";
 dotenv.config();
 import { connectDB } from './connection.js'
 import auctionRouter from './routes/auction.js';
-import { secureRoute } from './middleware/auth.js';
+import { authenticateSeller, authenticateAdmin } from './middleware/roleAuth.js';
 import userAuthRouter from './routes/userAuth.js';
 import userRouter from './routes/user.js';
 import contactRouter from "./routes/contact.js";
 import adminRouter from './routes/admin.js';
 import buyerAuthRouter from './routes/buyerAuth.js';
+import buyerAuctionRouter from './routes/buyerAuction.js';
+import notificationRouter from './routes/notification.js';
 
 const port = process.env.PORT || 4000;
 
@@ -31,10 +33,12 @@ app.get('/', async (req, res) => {
 });
 app.use('/auth', userAuthRouter)
 app.use('/buyer', buyerAuthRouter)
-app.use('/user', secureRoute, userRouter)
-app.use('/auction', secureRoute, auctionRouter);
+app.use('/buyer/auction', buyerAuctionRouter)
+app.use('/user', authenticateSeller, userRouter)
+app.use('/auction', authenticateSeller, auctionRouter);
+app.use('/notifications', authenticateSeller, notificationRouter);
 app.use('/contact', contactRouter);
-app.use('/admin', secureRoute, adminRouter)
+app.use('/admin', authenticateAdmin, adminRouter)
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);

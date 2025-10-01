@@ -6,7 +6,7 @@ import {
     updateBuyerProfile, 
     buyerLogout 
 } from "../controllers/buyerAuth.controller.js";
-import { secureRoute } from "../middleware/auth.js";
+import { authenticateBuyer } from "../middleware/roleAuth.js";
 
 const router = express.Router();
 
@@ -14,9 +14,9 @@ const router = express.Router();
 router.post("/signup", buyerSignup);
 router.post("/login", buyerLogin);
 
-// Protected routes (require authentication)
-router.get("/profile", secureRoute, getBuyerProfile);
-router.put("/profile", secureRoute, updateBuyerProfile);
-router.post("/logout", secureRoute, buyerLogout);
+// Protected routes (require buyer authentication)
+router.get("/profile", authenticateBuyer, getBuyerProfile);
+router.put("/profile", authenticateBuyer, updateBuyerProfile);
+router.post("/logout", authenticateBuyer, buyerLogout);
 
 export default router;

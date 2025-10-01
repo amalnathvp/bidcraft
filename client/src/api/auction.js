@@ -108,3 +108,29 @@ export const dashboardStats = async () => {
         console.log("Error on getting dashboard data", error.message);
     }
 }
+
+// update auction
+export const updateAuction = async (id, data) => {
+    try {
+        const res = await axios.put(`${VITE_AUCTION_API}/${id}`, data, {
+            withCredentials: true,
+        });
+        return res.data;
+    } catch (error) {
+        console.log("Error updating auction", error.message);
+        throw error;
+    }
+}
+
+// delete auction
+export const deleteAuction = async (id) => {
+    try {
+        const res = await axios.delete(`${VITE_AUCTION_API}/${id}`, {
+            withCredentials: true,
+        });
+        return res.data;
+    } catch (error) {
+        console.log("Error deleting auction", error.message);
+        throw error;
+    }
+}

@@ -1,16 +1,25 @@
-import { useRef } from "react";
-import { useParams, Link } from "react-router";
+import React, { useRef, useState } from "react";
+import { useParams, Link, useLocation, useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { placeBid, viewAuction } from "../api/auction.js";
+import { placeBid, viewAuction, updateAuction, deleteAuction } from "../api/auction.js";
 import { useSelector } from "react-redux";
+import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen.jsx";
 
 export const ViewAuction = () => {
   const { id } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
+  const { seller, isAuthenticated: isSellerAuthenticated } = useSellerAuth();
   const queryClient = useQueryClient();
   const inputRef = useRef();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
 
+  // Check if we're in seller context based on URL
+  const isSellerView = location.pathname.startsWith('/seller');
+  
   const { data, isLoading } = useQuery({
     queryKey: ["viewAuctions", id],
     queryFn: () => viewAuction(id),
@@ -29,6 +38,29 @@ export const ViewAuction = () => {
     },
   });
 
+  const updateAuctionMutate = useMutation({
+    mutationFn: ({ id, data }) => updateAuction(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["viewAuctions"] });
+      setIsEditing(false);
+      alert("Auction updated successfully!");
+    },
+    onError: (error) => {
+      alert(error.response?.data?.message || "Error updating auction");
+    },
+  });
+
+  const deleteAuctionMutate = useMutation({
+    mutationFn: (id) => deleteAuction(id),
+    onSuccess: () => {
+      alert("Auction deleted successfully!");
+      navigate("/seller");
+    },
+    onError: (error) => {
+      alert(error.response?.data?.message || "Error deleting auction");
+    },
+  });
+
   if (isLoading) return <LoadingScreen />;
 
   const handleBidSubmit = (e) => {
@@ -37,10 +69,60 @@ export const ViewAuction = () => {
     placeBidMutate.mutate({ bidAmount, id });
   };
 
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const updateData = {
+      itemName: formData.get('itemName'),
+      itemDescription: formData.get('itemDescription'),
+      itemCategory: formData.get('itemCategory'),
+      itemEndDate: formData.get('itemEndDate'),
+    };
+    updateAuctionMutate.mutate({ id, data: updateData });
+  };
+
+  const handleDeleteClick = () => {
+    if (window.confirm('Are you sure you want to delete this auction? This action cannot be undone.')) {
+      deleteAuctionMutate.mutate(id);
+    }
+  };
+
+  const startEditing = () => {
+    setEditForm({
+      itemName: data.itemName,
+      itemDescription: data.itemDescription,
+      itemCategory: data.itemCategory,
+      itemEndDate: data.itemEndDate?.split('T')[0], // Format for date input
+    });
+    setIsEditing(true);
+  };
+
   const daysLeft = Math.ceil(
     Math.max(0, new Date(data.itemEndDate) - new Date()) / (1000 * 60 * 60 * 24)
   );
   const isActive = Math.max(0, new Date(data.itemEndDate) - new Date()) > 0;
+
+  // Check if current user is the seller owner
+  const isOwner = React.useMemo(() => {
+    if (!isSellerView || !seller || !data) return false;
+    
+    const sellerId = seller?.user?._id;
+    const auctionSellerId = data?.seller?._id || data?.seller;
+    
+    console.log('ViewAuction Ownership check:', {
+      isSellerView,
+      sellerId,
+      auctionSellerId,
+      match: sellerId === auctionSellerId,
+      sellerObject: seller,
+      dataSellerObject: data?.seller
+    });
+    
+    return sellerId === auctionSellerId;
+  }, [isSellerView, seller, data]);
+  
+  // Only buyers can bid (sellers cannot bid at all)
+  const canBid = !isSellerView && user && data.seller._id !== user.user._id && isActive;
 
   return (
     <div className="min-h-screen bg-gray-50  mx-auto container">
@@ -122,7 +204,7 @@ export const ViewAuction = () => {
                 <div>
                   <p className="text-sm text-gray-500">Total Bids</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    {data.bids.length}
+                    {data.bidCount || data.bids?.length || 0}
                   </p>
                 </div>
                 <div>
@@ -138,8 +220,8 @@ export const ViewAuction = () => {
               </div>
             </div>
 
-            {/* Bid Form */}
-            {data.seller._id != user.user._id && isActive && (
+            {/* Bid Form for Buyers and Non-Owner Sellers */}
+            {canBid && (
               <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
                 <h3 className="text-lg font-semibold mb-4">Place Your Bid</h3>
                 <form onSubmit={handleBidSubmit} className="space-y-4">
@@ -173,6 +255,123 @@ export const ViewAuction = () => {
               </div>
             )}
 
+            {/* Message when can't bid */}
+            {!canBid && !isOwner && (
+              <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
+                <div className="text-center text-gray-500">
+                  {isSellerView ? (
+                    <div>
+                      <p className="text-orange-600 font-medium mb-2">Seller View Mode</p>
+                      <p>Sellers cannot place bids. Only buyers can bid on auctions.</p>
+                    </div>
+                  ) : !isActive ? (
+                    <p>This auction has ended.</p>
+                  ) : (
+                    <p>Please log in as a buyer to place a bid.</p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Seller Actions - Edit/Delete */}
+            {isOwner && (
+              <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
+                <h3 className="text-lg font-semibold mb-4">Auction Management</h3>
+                {!isEditing ? (
+                  <div className="space-y-3">
+                    <button
+                      onClick={startEditing}
+                      disabled={data.bids.length > 0}
+                      className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                        data.bids.length > 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                    >
+                      {data.bids.length > 0 ? 'Cannot Edit (Has Bids)' : 'Edit Auction'}
+                    </button>
+                    <button
+                      onClick={handleDeleteClick}
+                      disabled={data.bids.length > 0}
+                      className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                        data.bids.length > 0
+                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                          : 'bg-red-600 text-white hover:bg-red-700'
+                      }`}
+                    >
+                      {data.bids.length > 0 ? 'Cannot Delete (Has Bids)' : 'Delete Auction'}
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleEditSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Item Name
+                      </label>
+                      <input
+                        type="text"
+                        name="itemName"
+                        defaultValue={editForm.itemName}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Description
+                      </label>
+                      <textarea
+                        name="itemDescription"
+                        defaultValue={editForm.itemDescription}
+                        rows="3"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Category
+                      </label>
+                      <input
+                        type="text"
+                        name="itemCategory"
+                        defaultValue={editForm.itemCategory}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        End Date
+                      </label>
+                      <input
+                        type="date"
+                        name="itemEndDate"
+                        defaultValue={editForm.itemEndDate}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+                    <div className="flex space-x-3">
+                      <button
+                        type="submit"
+                        className="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 transition-colors font-medium"
+                      >
+                        Save Changes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(false)}
+                        className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-md hover:bg-gray-700 transition-colors font-medium"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </div>
+            )}
+
             {/* Seller Info */}
             <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
               <h3 className="text-lg font-semibold mb-3">Seller Information</h3>
@@ -183,33 +382,74 @@ export const ViewAuction = () => {
 
         {/* Bid History */}
         <div className="mt-12">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Bid History</h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">
+            {isSellerView ? 'Bidders List' : 'Bid History'}
+          </h2>
           <div className="bg-white rounded-md shadow-md border border-gray-200 overflow-hidden">
             {data.bids.length === 0 ? (
               <div className="p-8 text-center text-gray-500">
-                No bids yet. Be the first to bid!
+                {isSellerView ? 'No bids received yet.' : 'No bids yet. Be the first to bid!'}
               </div>
             ) : (
               <div className="divide-y divide-gray-200">
+                {isSellerView && (
+                  <div className="bg-gray-50 px-4 py-3 grid grid-cols-4 gap-4 text-sm font-medium text-gray-700">
+                    <div>Bidder Name</div>
+                    <div>Bid Amount</div>
+                    <div>Date</div>
+                    <div>Time</div>
+                  </div>
+                )}
                 {data.bids.map((bid, index) => (
                   <div
                     key={index}
-                    className="p-4 flex justify-between items-center"
+                    className={`p-4 ${
+                      isSellerView 
+                        ? 'grid grid-cols-4 gap-4 items-center'
+                        : 'flex justify-between items-center'
+                    }`}
                   >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {bid.bidder?.name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(bid.bidTime).toLocaleDateString()} at{" "}
-                        {new Date(bid.bidTime).toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold text-green-600">
-                        ${bid.bidAmount}
-                      </p>
-                    </div>
+                    {isSellerView ? (
+                      <>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {bid.bidder?.name || 'Anonymous'}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-lg font-semibold text-green-600">
+                            ${bid.bidAmount}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            {new Date(bid.bidTime).toLocaleDateString()}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-600">
+                            {new Date(bid.bidTime).toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {bid.bidder?.name}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(bid.bidTime).toLocaleDateString()} at{" "}
+                            {new Date(bid.bidTime).toLocaleTimeString()}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-lg font-semibold text-green-600">
+                            ${bid.bidAmount}
+                          </p>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>

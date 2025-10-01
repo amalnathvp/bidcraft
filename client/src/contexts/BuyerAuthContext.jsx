@@ -41,8 +41,10 @@ export const BuyerAuthProvider = ({ children }) => {
   const { data: authData, isLoading, error } = useQuery({
     queryKey: ['buyerAuth'],
     queryFn: checkBuyerAuth,
-    retry: false,
+    retry: 1,
     refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
   });
 
   // Logout mutation

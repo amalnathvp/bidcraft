@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
-import { useDispatch, useSelector } from "react-redux";
-import { logout } from "../store/auth/authSlice";
+import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
 import {
   MdOutlineCreate,
   MdOutlineDashboard,
@@ -21,14 +20,13 @@ import {
 import { RiAuctionLine } from "react-icons/ri";
 
 export const Navbar = () => {
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user } = useSelector((state) => state.auth);
+  const { seller, isAuthenticated, logout } = useSellerAuth();
 
   // User logout
   const handleLogout = () => {
-    dispatch(logout());
+    logout();
     navigate("/");
   };
 
@@ -63,7 +61,7 @@ export const Navbar = () => {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
-              {(user ? getNavLinks(user.user.role) : navMenu).map((item) => (
+              {(isAuthenticated ? getNavLinks(seller?.role) : navMenu).map((item) => (
                 <NavLink
                   to={item.link}
                   key={item.link}
@@ -120,14 +118,14 @@ export const Navbar = () => {
           </button>
         </div>
 
-        {user && (
+        {isAuthenticated && (
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                {user.user.avatar ? (
+                {seller?.avatar ? (
                   <img
-                    src={user.user.avatar}
-                    alt={user.user.name}
+                    src={seller.avatar}
+                    alt={seller.name}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -135,9 +133,9 @@ export const Navbar = () => {
                 )}
               </div>
               <div>
-                <p className="font-medium text-gray-900 ">{user.user.name}</p>
+                <p className="font-medium text-gray-900 ">{seller?.name}</p>
                 <p className="text-sm text-gray-500 truncate">
-                  {user.user.email}
+                  {seller?.email}
                 </p>
               </div>
             </div>
@@ -146,7 +144,7 @@ export const Navbar = () => {
 
         <nav className="p-4">
           <ul className="space-y-1">
-            {(user ? getNavLinks(user.user.role) : navMenu).map((item) => (
+            {(isAuthenticated ? getNavLinks(seller?.role) : navMenu).map((item) => (
               <li key={item.link}>
                 <NavLink
                   to={item.link}
@@ -164,7 +162,7 @@ export const Navbar = () => {
             ))}
           </ul>
 
-          {user ? (
+          {isAuthenticated ? (
             <div className="mt-6 pt-6 border-t border-gray-200 ">
               <ul className="space-y-4">
                 {protectedNavLink.slice(4, 7).map((item) => (
@@ -269,6 +267,11 @@ const protectedNavLink = [
     icon: <MdOutlineDashboard className="mr-3 h-5 w-5" />,
   },
   {
+    name: "Live Auctions",
+    link: "/seller/live-auctions",
+    icon: <RiAuctionLine className="mr-3 h-5 w-5" />,
+  },
+  {
     name: "Create Auction",
     link: "/seller/create",
     icon: <MdOutlineCreate className="mr-3 h-5 w-5" />,
@@ -282,6 +285,11 @@ const protectedNavLink = [
     name: "My Auction",
     link: "/seller/myauction",
     icon: <MdAttachMoney className="mr-3 h-5 w-5" />,
+  },
+  {
+    name: "Notifications",
+    link: "/seller/notifications",
+    icon: <MdMailOutline className="mr-3 h-5 w-5" />,
   },
   {
     name: "Contact",
@@ -328,5 +336,5 @@ const getNavLinks = (userRole) => {
   if (userRole === 'admin') {
     return adminNavLink;
   }
-  return protectedNavLink.slice(0, 4);
+  return protectedNavLink.slice(0, 6); // Include Live Auctions, Create, View, My Auction, Notifications
 };

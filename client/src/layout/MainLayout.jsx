@@ -1,24 +1,55 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, useLocation } from "react-router";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
 import LoadingScreen from "../components/LoadingScreen";
 import ScrollToTop from "../utils/ScrollToTop";
-import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
+import { useEffect, useState } from "react";
 
 export const MainLayout = () => {
-  const { user, loading } = useSelector((state) => state.auth);
+  const { seller, isAuthenticated, isLoading } = useSellerAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const [hasCheckedAuth, setHasCheckedAuth] = useState(false);
 
   useEffect(() => {
-    if (!loading && !user) {
-      navigate("/login");
+    // Only check after initial loading is complete
+    if (!isLoading) {
+      setHasCheckedAuth(true);
+      
+      // Add a small delay to allow for authentication to settle
+      const timer = setTimeout(() => {
+        if (!isAuthenticated) {
+          // Don't redirect if already on login/signup pages
+          if (!location.pathname.includes('/login') && !location.pathname.includes('/signup')) {
+            console.log('Redirecting to login - not authenticated');
+            navigate("/login");
+          }
+        }
+      }, 1000); // 1 second delay
+      
+      return () => clearTimeout(timer);
     }
-  }, [loading, user, navigate]);
+  }, [isLoading, isAuthenticated, navigate, location.pathname]);
 
-  if (loading) return <LoadingScreen />;
+  // Show loading while authentication is being checked
+  if (isLoading || !hasCheckedAuth) {
+    return <LoadingScreen />;
+  }
 
-  if (!user) return null; // Prevents flashing protected content before redirect
+  // Allow access to login/signup pages even when not authenticated
+  if (!isAuthenticated && (location.pathname.includes('/login') || location.pathname.includes('/signup'))) {
+    return (
+      <>
+        <ScrollToTop />
+        <Navbar />
+        <Outlet />
+        <Footer />
+      </>
+    );
+  }
+
+  if (!isAuthenticated) return null; // Prevents flashing protected content before redirect
 
   return (
     <>
