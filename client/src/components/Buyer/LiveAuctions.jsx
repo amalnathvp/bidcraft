@@ -7,8 +7,17 @@ import { useSellerAuth } from "../../contexts/SellerAuthContext.jsx";
 import { BuyerNavbar } from "./BuyerNavbar.jsx";
 
 const formatTimeLeft = (endDate) => {
+  if (!endDate) return "Invalid date";
+  
   const now = new Date();
   const end = new Date(endDate);
+  
+  // Check if the date is valid
+  if (isNaN(end.getTime())) {
+    console.warn('Invalid end date in formatTimeLeft:', endDate);
+    return "Invalid date";
+  }
+  
   const diff = end - now;
   
   if (diff <= 0) return "Auction ended";
@@ -70,7 +79,7 @@ const AuctionCard = ({ auction, isSellerRoute = false }) => {
         </div>
         
         <Link 
-          to={isSellerRoute ? `/seller/auction/${auction._id}` : `/auction/${auction._id}`}
+          to={isSellerRoute ? `/seller/auction-detail/${auction._id}` : `/auction/${auction._id}`}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors"
         >
           {isSellerRoute ? "Manage Auction" : "Place Bid"}
@@ -93,38 +102,77 @@ export const LiveAuctions = () => {
     enabled: isSellerRoute ? isSellerAuthenticated : true,
   });
 
+  // Add debug logging
+  React.useEffect(() => {
+    console.log('LiveAuctions Debug:', {
+      isSellerRoute,
+      isSellerAuthenticated,
+      isLoading,
+      error,
+      allAuctions,
+      auctionsCount: allAuctions?.length || 0
+    });
+  }, [isSellerRoute, isSellerAuthenticated, isLoading, error, allAuctions]);
+
   // Filter for only active auctions
   const auctions = React.useMemo(() => {
     if (!allAuctions) return [];
     
+    // For debugging, let's see all auctions first
+    console.log('All auctions from API:', allAuctions);
+    
     const activeAuctions = allAuctions.filter(auction => {
+      // Validate the end date
+      if (!auction.itemEndDate) {
+        console.warn('Auction missing itemEndDate:', auction.itemName);
+        return false;
+      }
+      
       const endDate = new Date(auction.itemEndDate);
       const now = new Date();
+      
+      // Check if the date is valid
+      if (isNaN(endDate.getTime())) {
+        console.warn('Invalid date for auction:', auction.itemName, 'Date value:', auction.itemEndDate);
+        return false;
+      }
+      
       const isActive = endDate > now;
       
-      // Debug logging for seller routes
+      // Debug logging for seller routes (only for valid dates)
       if (isSellerRoute) {
         console.log('Auction filter check:', {
           itemName: auction.itemName,
+          itemEndDate: auction.itemEndDate,
           endDate: endDate.toISOString(),
           now: now.toISOString(),
           isActive,
-          timeLeft: endDate - now
+          timeLeft: endDate - now,
+          daysDifference: (endDate - now) / (1000 * 60 * 60 * 24)
         });
       }
       
       return isActive;
     });
     
+    // For debugging, temporarily return all auctions to see if any exist
+    const resultAuctions = isSellerRoute ? allAuctions : activeAuctions;
+    
     if (isSellerRoute) {
       console.log('Seller live auctions:', {
         total: allAuctions?.length || 0,
         active: activeAuctions.length,
-        auctions: activeAuctions.map(a => ({ name: a.itemName, bids: a.bidCount || 0 }))
+        returned: resultAuctions.length,
+        auctions: resultAuctions.map(a => ({ 
+          name: a.itemName, 
+          bids: a.bidCount || 0,
+          endDate: a.itemEndDate,
+          isActive: new Date(a.itemEndDate) > new Date()
+        }))
       });
     }
     
-    return activeAuctions;
+    return resultAuctions;
   }, [allAuctions, isSellerRoute]);
 
   return (
@@ -135,14 +183,14 @@ export const LiveAuctions = () => {
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isSellerRoute ? 'Your Live Auctions' : 'Live Auctions'}
+            {isSellerRoute ? 'Your Auctions' : 'Live Auctions'}
             {isSellerRoute && auctions && (
-              <span className="text-lg font-normal text-gray-500 ml-2">({auctions.length} active)</span>
+              <span className="text-lg font-normal text-gray-500 ml-2">({auctions.length} total)</span>
             )}
           </h1>
           <p className="text-gray-600">
             {isSellerRoute 
-              ? 'Monitor your active auctions and track bidding activity in real-time'
+              ? 'Manage all your auction listings. Active auctions are highlighted.'
               : 'Don\'t miss out on these exceptional pieces'
             }
           </p>
@@ -211,11 +259,11 @@ export const LiveAuctions = () => {
           <div className="text-center py-12">
             <div className="text-6xl mb-4">{isSellerRoute ? '📦' : '🏺'}</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              {isSellerRoute ? 'No Active Auctions' : 'No Live Auctions'}
+              {isSellerRoute ? 'No Auctions Found' : 'No Live Auctions'}
             </h3>
             <p className="text-gray-600 mb-6">
               {isSellerRoute 
-                ? 'You don\'t have any active auctions at the moment. Create a new auction to get started!'
+                ? 'You haven\'t created any auctions yet. Start by creating your first auction!'
                 : 'There are no active auctions at the moment. Check back soon!'
               }
             </p>

@@ -20,6 +20,18 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/auth': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/user': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      },
+      '/auction': {
+        target: 'http://localhost:3000',
+        changeOrigin: true
       }
     },
     hmr: process.env.DISABLE_HMR === 'true' ? false : {

@@ -11,7 +11,7 @@ export const ViewAuction = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { seller, isAuthenticated: isSellerAuthenticated } = useSellerAuth();
+  const { seller, isAuthenticated: isSellerAuthenticated, isLoading: sellerLoading } = useSellerAuth();
   const queryClient = useQueryClient();
   const inputRef = useRef();
   const [isEditing, setIsEditing] = useState(false);
@@ -61,7 +61,19 @@ export const ViewAuction = () => {
     },
   });
 
-  if (isLoading) return <LoadingScreen />;
+  // Show loading while auction data or seller auth (in seller view) is loading
+  if (isLoading || (isSellerView && sellerLoading)) return <LoadingScreen />;
+  
+  if (!data) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-700">Auction not found</h2>
+          <p className="text-gray-500">The auction you're looking for doesn't exist.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleBidSubmit = (e) => {
     e.preventDefault();
@@ -104,21 +116,34 @@ export const ViewAuction = () => {
 
   // Check if current user is the seller owner
   const isOwner = React.useMemo(() => {
-    if (!isSellerView || !seller || !data) return false;
+    if (!isSellerView || !data) return false;
     
-    const sellerId = seller?.user?._id;
-    const auctionSellerId = data?.seller?._id || data?.seller;
+    // Wait for seller authentication to complete
+    if (!seller?.user?._id) {
+      console.log('ViewAuction: Seller not loaded yet');
+      return false;
+    }
+    
+    const sellerId = seller.user._id;
+    const auctionSellerId = data.seller?._id || data.seller; // Handle both populated and ObjectId formats
+    
+    // Try both strict and string comparison for robustness
+    const isMatch = sellerId === auctionSellerId || String(sellerId) === String(auctionSellerId);
     
     console.log('ViewAuction Ownership check:', {
       isSellerView,
       sellerId,
       auctionSellerId,
-      match: sellerId === auctionSellerId,
+      sellerIdType: typeof sellerId,
+      auctionSellerIdType: typeof auctionSellerId,
+      strictMatch: sellerId === auctionSellerId,
+      stringMatch: String(sellerId) === String(auctionSellerId),
+      finalMatch: isMatch,
       sellerObject: seller,
-      dataSellerObject: data?.seller
+      dataSellerObject: data.seller
     });
     
-    return sellerId === auctionSellerId;
+    return isMatch;
   }, [isSellerView, seller, data]);
   
   // Only buyers can bid (sellers cannot bid at all)
@@ -255,16 +280,35 @@ export const ViewAuction = () => {
               </div>
             )}
 
-            {/* Message when can't bid */}
-            {!canBid && !isOwner && (
+            {/* Message when can't bid - but don't show for auction owners */}
+            {!canBid && !isOwner && isSellerView && seller?.user?._id && (
               <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
                 <div className="text-center text-gray-500">
-                  {isSellerView ? (
-                    <div>
-                      <p className="text-orange-600 font-medium mb-2">Seller View Mode</p>
-                      <p>Sellers cannot place bids. Only buyers can bid on auctions.</p>
-                    </div>
-                  ) : !isActive ? (
+                  <div>
+                    <p className="text-orange-600 font-medium mb-2">Seller View Mode</p>
+                    <p>Sellers cannot place bids. Only buyers can bid on auctions.</p>
+                    <p className="text-sm text-gray-400 mt-2">To bid on this auction, please log in as a buyer.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Loading state for seller authentication */}
+            {isSellerView && !seller?.user?._id && (
+              <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
+                <div className="text-center text-gray-500">
+                  <div className="animate-pulse">
+                    <p>Loading seller information...</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Show message for non-seller views when can't bid */}
+            {!canBid && !isSellerView && (
+              <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
+                <div className="text-center text-gray-500">
+                  {!isActive ? (
                     <p>This auction has ended.</p>
                   ) : (
                     <p>Please log in as a buyer to place a bid.</p>
@@ -275,8 +319,16 @@ export const ViewAuction = () => {
 
             {/* Seller Actions - Edit/Delete */}
             {isOwner && (
-              <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
-                <h3 className="text-lg font-semibold mb-4">Auction Management</h3>
+              <div className="bg-green-50 p-6 rounded-md shadow-md border border-green-200">
+                <div className="flex items-center justify-center mb-4">
+                  <div className="text-green-700 text-center">
+                    <div className="text-2xl mb-2">✅</div>
+                    <p className="font-semibold text-lg">You own this auction</p>
+                    <p className="text-sm text-green-600">Auction ID: {data._id}</p>
+                    <p className="text-xs text-green-500 mt-1">Seller ID: {seller?.user?._id}</p>
+                  </div>
+                </div>
+                <h3 className="text-lg font-semibold mb-4 text-center">Auction Management</h3>
                 {!isEditing ? (
                   <div className="space-y-3">
                     <button

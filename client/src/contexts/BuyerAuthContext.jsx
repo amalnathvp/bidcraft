@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+﻿import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // Create the context
@@ -6,20 +6,32 @@ const BuyerAuthContext = createContext();
 
 // API functions
 const checkBuyerAuth = async () => {
-  const response = await fetch('/api/buyer/profile', {
-    method: 'GET',
-    credentials: 'include',
-  });
-  
-  if (!response.ok) {
-    throw new Error('Not authenticated');
+  try {
+    const response = await fetch('/buyer/profile', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        console.log('Buyer auth check failed - unauthorized:', response.status);
+        throw new Error(`Authentication failed: ${response.status}`);
+      }
+      console.log('Buyer auth check - server error, will retry:', response.status);
+      throw new Error(`Server error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Buyer auth check success:', data);
+    return data;
+  } catch (error) {
+    console.log('Buyer auth check error:', error);
+    throw error;
   }
-  
-  return response.json();
 };
 
 const buyerLogout = async () => {
-  const response = await fetch('/api/buyer/logout', {
+  const response = await fetch('/auth/logout', {
     method: 'POST',
     credentials: 'include',
   });
@@ -31,20 +43,53 @@ const buyerLogout = async () => {
   return response.json();
 };
 
-// Provider component
+export const useBuyerAuth = () => {
+  const context = useContext(BuyerAuthContext);
+  if (!context) {
+    throw new Error('useBuyerAuth must be used within a BuyerAuthProvider');
+  }
+  return context;
+};
+
 export const BuyerAuthProvider = ({ children }) => {
   const queryClient = useQueryClient();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [buyer, setBuyer] = useState(null);
+  
+  // Initialize state from localStorage for persistence
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const savedAuth = localStorage.getItem('buyerAuth');
+      return savedAuth ? JSON.parse(savedAuth).isAuthenticated : false;
+    } catch {
+      return false;
+    }
+  });
+  
+  const [buyer, setBuyer] = useState(() => {
+    try {
+      const savedAuth = localStorage.getItem('buyerAuth');
+      return savedAuth ? JSON.parse(savedAuth).buyer : null;
+    } catch {
+      return null;
+    }
+  });
 
   // Query to check authentication status
-  const { data: authData, isLoading, error } = useQuery({
+  const { data: authData, isLoading, error, refetch } = useQuery({
     queryKey: ['buyerAuth'],
     queryFn: checkBuyerAuth,
-    retry: 1,
+    retry: (failureCount, error) => {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
     refetchOnWindowFocus: false,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
+    refetchOnMount: true,
+    refetchOnReconnect: true,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+    throwOnError: false,
   });
 
   // Logout mutation
@@ -53,36 +98,90 @@ export const BuyerAuthProvider = ({ children }) => {
     onSuccess: () => {
       setIsAuthenticated(false);
       setBuyer(null);
+      localStorage.removeItem('buyerAuth');
       queryClient.invalidateQueries(['buyerAuth']);
-      // Redirect to home page
+      queryClient.clear();
+      console.log('Buyer logged out successfully');
       window.location.href = '/';
     },
     onError: (error) => {
       console.error('Logout error:', error);
+      setIsAuthenticated(false);
+      setBuyer(null);
+      localStorage.removeItem('buyerAuth');
+      window.location.href = '/';
     }
   });
 
   // Update auth state when data changes
   useEffect(() => {
     if (authData && authData.buyer) {
+      const newAuthState = {
+        isAuthenticated: true,
+        buyer: authData.buyer
+      };
+      
       setIsAuthenticated(true);
       setBuyer(authData.buyer);
-    } else if (error) {
-      setIsAuthenticated(false);
-      setBuyer(null);
+      localStorage.setItem('buyerAuth', JSON.stringify(newAuthState));
+      console.log('Buyer authenticated and persisted:', authData.buyer.name);
+    } else if (error && !isLoading) {
+      if (error.message.includes('401') || error.message.includes('403')) {
+        console.log('Buyer authentication failed - clearing state:', error.message);
+        setIsAuthenticated(false);
+        setBuyer(null);
+        localStorage.removeItem('buyerAuth');
+      } else {
+        console.log('Network/server error, keeping current auth state:', error.message);
+      }
     }
-  }, [authData, error]);
+  }, [authData, error, isLoading]);
+
+  // Listen for localStorage changes across tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'buyerAuth') {
+        if (e.newValue) {
+          try {
+            const newAuthState = JSON.parse(e.newValue);
+            setIsAuthenticated(newAuthState.isAuthenticated);
+            setBuyer(newAuthState.buyer);
+          } catch (error) {
+            console.error('Error parsing auth state from localStorage:', error);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setBuyer(null);
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Login function to be called after successful login
   const login = (buyerData) => {
+    const newAuthState = {
+      isAuthenticated: true,
+      buyer: buyerData
+    };
+    
     setIsAuthenticated(true);
     setBuyer(buyerData);
+    localStorage.setItem('buyerAuth', JSON.stringify(newAuthState));
     queryClient.setQueryData(['buyerAuth'], { buyer: buyerData });
+    console.log('Buyer login state persisted:', buyerData.name);
   };
 
   // Logout function
   const logout = () => {
     logoutMutation.mutate();
+  };
+
+  // Refresh auth function to refetch user data
+  const refreshAuth = () => {
+    refetch();
   };
 
   const value = {
@@ -91,7 +190,9 @@ export const BuyerAuthProvider = ({ children }) => {
     isLoading,
     login,
     logout,
-    isLoggingOut: logoutMutation.isPending
+    refreshAuth,
+    isLoggingOut: logoutMutation.isPending,
+    error
   };
 
   return (
@@ -99,13 +200,4 @@ export const BuyerAuthProvider = ({ children }) => {
       {children}
     </BuyerAuthContext.Provider>
   );
-};
-
-// Hook to use the context
-export const useBuyerAuth = () => {
-  const context = useContext(BuyerAuthContext);
-  if (context === undefined) {
-    throw new Error('useBuyerAuth must be used within a BuyerAuthProvider');
-  }
-  return context;
 };

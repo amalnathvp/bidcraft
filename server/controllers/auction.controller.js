@@ -241,9 +241,14 @@ export const myAuction = async (req, res) => {
 // Update auction
 export const updateAuction = async (req, res) => {
     try {
+        console.log('=== UPDATE AUCTION REQUEST ===');
+        console.log('User ID:', req.user?.id);
+        console.log('Request body:', req.body);
+        console.log('Request files:', req.files ? `${req.files.length} files present` : 'No files');
+        
         await connectDB();
         const { id } = req.params;
-        const { itemName, itemDescription, startingPrice, itemCategory, itemEndDate } = req.body;
+        const { itemName, itemDescription, startingPrice, itemCategory, itemEndDate, existingImages } = req.body;
 
         // Find the auction and verify ownership
         const auction = await Product.findById(id);
@@ -262,6 +267,33 @@ export const updateAuction = async (req, res) => {
             });
         }
 
+        // Handle image updates
+        let imageUrls = [];
+        
+        // Add existing images that weren't removed
+        if (existingImages) {
+            if (Array.isArray(existingImages)) {
+                imageUrls = [...existingImages];
+            } else {
+                // If it's a single string, convert to array
+                imageUrls = [existingImages];
+            }
+        }
+
+        // Handle new image uploads
+        if (req.files && req.files.length > 0) {
+            try {
+                console.log(`Uploading ${req.files.length} new images...`);
+                const uploadPromises = req.files.map(file => uploadImage(file));
+                const newImageUrls = await Promise.all(uploadPromises);
+                imageUrls = [...imageUrls, ...newImageUrls];
+                console.log('New images uploaded successfully:', newImageUrls);
+            } catch (error) {
+                console.error('Image upload error:', error);
+                return res.status(500).json({ message: 'Error uploading images', error: error.message });
+            }
+        }
+
         // Update the auction
         const updatedAuction = await Product.findByIdAndUpdate(
             id,
@@ -272,15 +304,18 @@ export const updateAuction = async (req, res) => {
                 currentPrice: startingPrice || auction.currentPrice,
                 itemCategory: itemCategory || auction.itemCategory,
                 itemEndDate: itemEndDate || auction.itemEndDate,
+                itemPhotos: imageUrls.length > 0 ? imageUrls : auction.itemPhotos,
             },
             { new: true }
         );
 
+        console.log('Auction updated successfully');
         res.status(200).json({ 
             message: 'Auction updated successfully', 
             auction: updatedAuction 
         });
     } catch (error) {
+        console.error('Update auction error:', error);
         res.status(500).json({ message: 'Error updating auction', error: error.message });
     }
 }

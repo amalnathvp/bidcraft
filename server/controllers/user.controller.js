@@ -58,6 +58,95 @@ export const handleChangePassword = async (req, res) => {
     }
 };
 
+export const updateProfile = async (req, res) => {
+    try {
+        console.log('=== UPDATE PROFILE REQUEST ===');
+        console.log('User ID:', req.user?.id);
+        console.log('User Role:', req.user?.role);
+        console.log('Request body:', req.body);
+        
+        await connectDB();
+        const userId = req.user.id;
+        const {
+            name,
+            email,
+            phone,
+            address,
+            city,
+            state,
+            zipCode,
+            country,
+            businessName,
+            businessType,
+            taxId,
+            website,
+            description,
+            socialMedia
+        } = req.body;
+
+        // Find the user
+        const user = await User.findById(userId);
+        if (!user) {
+            console.log('User not found:', userId);
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        console.log('Current user:', { id: user._id, name: user.name, email: user.email });
+
+        // Update user fields
+        const updateData = {
+            name: name || user.name,
+            email: email || user.email,
+            phone: phone || user.phone,
+            city: city || user.city,
+            state: state || user.state,
+            zipCode: zipCode || user.zipCode,
+            country: country || user.country,
+            businessName: businessName || user.businessName,
+            businessType: businessType || user.businessType,
+            taxId: taxId || user.taxId,
+            website: website || user.website,
+            description: description || user.description,
+            updatedAt: new Date()
+        };
+
+        // Handle address separately for sellers (flat structure)
+        if (address !== undefined) {
+            updateData.businessAddress = address; // Use businessAddress for sellers
+        }
+
+        // Handle social media object
+        if (socialMedia !== undefined) {
+            updateData.socialMedia = {
+                facebook: socialMedia.facebook || user.socialMedia?.facebook || '',
+                twitter: socialMedia.twitter || user.socialMedia?.twitter || '',
+                instagram: socialMedia.instagram || user.socialMedia?.instagram || ''
+            };
+        }
+
+        console.log('Update data:', updateData);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            userId,
+            updateData,
+            { new: true, runValidators: true }
+        ).select("-password");
+
+        console.log('Profile updated successfully');
+        res.status(200).json({
+            message: "Profile updated successfully",
+            user: updatedUser
+        });
+
+    } catch (error) {
+        console.error("Error updating profile:", error);
+        res.status(500).json({
+            message: "Error updating profile",
+            error: error.message
+        });
+    }
+};
+
 export const getLoginHistory = async (req, res) => {
     try {
         await connectDB();

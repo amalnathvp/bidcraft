@@ -5,6 +5,7 @@ import { AuctionList } from "../pages/AuctionList";
 import { CreateAuction } from "../pages/CreateAuction";
 import { MyAuction } from "../pages/MyAuction";
 import Profile from "../pages/Profile";
+import SellerProfile from "../pages/SellerProfile";
 import Privacy from "../pages/Privacy";
 import { AuctionDetail } from "../components/Buyer/AuctionDetail.jsx";
 import { LiveAuctions } from "../components/Buyer/LiveAuctions.jsx";
@@ -58,7 +59,7 @@ export const protectedRoutes = [
       },
       {
         path: "profile",
-        element: <Profile />,
+        element: <SellerProfile />,
         errorElement: <Error />,
       },
       {

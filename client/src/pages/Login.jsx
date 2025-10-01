@@ -17,7 +17,9 @@ const Login = () => {
 
   // Seller login API call
   const loginSeller = async (loginData) => {
-    const response = await fetch('/api/auth/login', {
+    console.log('Login attempt:', loginData);
+    
+    const response = await fetch('/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -26,21 +28,97 @@ const Login = () => {
       body: JSON.stringify(loginData),
     });
 
+    console.log('Login response status:', response.status);
+    console.log('Login response headers:', response.headers);
+    
+    // Check if response has content
+    const contentType = response.headers.get('content-type');
+    console.log('Response content-type:', contentType);
+    
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Login failed');
+      let errorMessage = 'Login failed';
+      try {
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          errorMessage = error.error || error.message || errorMessage;
+        } else {
+          const errorText = await response.text();
+          console.log('Non-JSON error response:', errorText);
+          errorMessage = errorText || errorMessage;
+        }
+      } catch (parseError) {
+        console.log('Error parsing error response:', parseError);
+      }
+      throw new Error(errorMessage);
     }
 
-    return response.json();
+    // Handle successful response
+    try {
+      if (contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        console.log('Login success data:', data);
+        return data;
+      } else {
+        console.log('Non-JSON success response, checking text...');
+        const text = await response.text();
+        console.log('Response text:', text);
+        
+        if (text.trim() === '') {
+          // Empty response - create a basic success response
+          console.log('Empty response detected, creating default response');
+          return { message: 'Login Successful', user: null };
+        }
+        
+        // Try to parse as JSON anyway
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error('Server returned invalid response format');
+        }
+      }
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      throw new Error('Server response could not be parsed: ' + parseError.message);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Login and get user data in response
       const response = await loginSeller(formData);
-      login(response.user); // Update the seller auth context
-      navigate("/seller");
+      console.log('Login response received:', response);
+      
+      if (response.user) {
+        // Update the seller auth context with user data from login response
+        login(response.user);
+        navigate("/seller");
+      } else {
+        // If no user data in response, try to fetch it separately
+        console.log('No user data in login response, fetching separately...');
+        try {
+          const userResponse = await fetch('/user', {
+            method: 'GET',
+            credentials: 'include',
+          });
+          
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            if (userData.user) {
+              login(userData.user);
+              navigate("/seller");
+            } else {
+              throw new Error('No user data available');
+            }
+          } else {
+            throw new Error('Failed to fetch user data after login');
+          }
+        } catch (fetchError) {
+          console.error('Error fetching user data:', fetchError);
+          throw new Error('Login succeeded but failed to get user information');
+        }
+      }
     } catch (error) {
       console.log("Login Failed", error);
       setIsError(error.message || "Login failed");

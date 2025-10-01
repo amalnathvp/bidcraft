@@ -17,7 +17,7 @@ auctionRouter
 auctionRouter
     .get('/:id', auctionById)
     .post('/:id', placeBid)
-    .put('/:id', updateAuction)
+    .put('/:id', upload.array('itemPhotos', 5), updateAuction)
     .delete('/:id', deleteAuction)
 
 

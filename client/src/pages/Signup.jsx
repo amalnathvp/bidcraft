@@ -18,7 +18,7 @@ const Signup = () => {
 
   // Seller signup API call
   const signupSeller = async (signupData) => {
-    const response = await fetch('/api/auth/signup', {
+    const response = await fetch('/auth/signup', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -55,26 +55,51 @@ export const Navbar = () => {
             <Link to="/seller" className="flex items-center space-x-2">
               <RiAuctionLine className="h-6 w-6 text-gray-700 " />
               <span className="text-xl font-bold text-gray-900 ">
-                Online Auction
+                BidCraft
               </span>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center space-x-6">
-              {(isAuthenticated ? getNavLinks(seller?.role) : navMenu).map((item) => (
-                <NavLink
-                  to={item.link}
-                  key={item.link}
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-indigo-600 hover:text-indigo-800 font-medium"
-                      : "text-gray-600 hover:text-gray-800 font-medium"
-                  }
-                >
-                  {item.name}
-                </NavLink>
-              ))}
-            </nav>
+            <div className="hidden md:flex items-center space-x-6">
+              <nav className="flex items-center space-x-6">
+                {(isAuthenticated ? getNavLinks(seller?.role) : navMenu).map((item) => (
+                  <NavLink
+                    to={item.link}
+                    key={item.link}
+                    className={({ isActive }) =>
+                      isActive
+                        ? "text-indigo-600 hover:text-indigo-800 font-medium"
+                        : "text-gray-600 hover:text-gray-800 font-medium"
+                    }
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
+              </nav>
+              
+              {/* User Profile Dropdown */}
+              {isAuthenticated && (
+                <div className="relative">
+                  <div className="flex items-center space-x-3 bg-gray-50 rounded-lg px-3 py-2">
+                    <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                      {seller?.user?.avatar ? (
+                        <img
+                          src={seller.user.avatar}
+                          alt={seller.user.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <MdOutlineAccountCircle className="h-8 w-8 text-gray-500" />
+                      )}
+                    </div>
+                    <div className="hidden lg:block">
+                      <p className="text-sm font-medium text-gray-900">{seller?.user?.name}</p>
+                      <p className="text-xs text-gray-500">Seller</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Mobile Menu Button */}
             <button
@@ -106,7 +131,7 @@ export const Navbar = () => {
           <div className="flex items-center space-x-2">
             <RiAuctionLine className="h-6 w-6 text-gray-700 " />
             <span className="text-xl font-bold text-gray-900 ">
-              Online Auction
+              BidCraft
             </span>
           </div>
           <button
@@ -290,6 +315,11 @@ const protectedNavLink = [
     name: "Notifications",
     link: "/seller/notifications",
     icon: <MdMailOutline className="mr-3 h-5 w-5" />,
+  },
+  {
+    name: "Profile",
+    link: "/seller/profile",
+    icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
   },
   {
     name: "Contact",

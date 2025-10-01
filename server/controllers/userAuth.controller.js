@@ -9,24 +9,40 @@ dotenv.config();
 
 
 export const handleUserLogin = async (req, res) => {
+    console.log('=== LOGIN REQUEST RECEIVED ===');
+    console.log('Request body:', req.body);
+    console.log('Request headers:', req.headers);
+    
     const { email, password } = req.body;
-    if (!email || !password) return res.status(400).json({ error: "All Fields are required" });
+    if (!email || !password) {
+        console.log('Missing email or password');
+        return res.status(400).json({ error: "All Fields are required" });
+    }
+    
     try {
         await connectDB();
+        console.log('Looking for user with email:', email);
         const user = await User.findOne({ email });
         //  Checking user exists
         if (!user) {
+            console.log('User not found for email:', email);
             return res.status(400).json({ error: "User not found" });
         }
+
+        console.log('User found:', { id: user._id, name: user.name, email: user.email, role: user.role });
 
         // Password Validate
         const psswordValidate = await bcrypt.compare(password, user.password);
         if (!psswordValidate) {
+            console.log('Password validation failed for user:', email);
             return res.status(401).json({ error: "Invalid Credentials" });
         }
 
+        console.log('Password validated successfully');
+
         // generating jwt token
         const token = generateToken(user._id, user.role);
+        console.log('JWT token generated');
 
         // Set HTTP-only cookie
         res.cookie("auth_token", token, {
@@ -35,6 +51,7 @@ export const handleUserLogin = async (req, res) => {
             sameSite: "lax",
             maxAge: 7 * 24 * 60 * 60 * 1000,
         })
+        console.log('Auth cookie set');
 
         // Getting user gro location
         const ip = getClientIp(req);
@@ -59,7 +76,20 @@ export const handleUserLogin = async (req, res) => {
         })
         await login.save();
 
-        return res.status(200).json({ message: "Login Successful" });
+        // Return user data (without password) along with success message
+        const userResponse = {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            avatar: user.avatar
+        };
+
+        console.log('Sending successful login response:', { message: "Login Successful", user: userResponse });
+        return res.status(200).json({ 
+            message: "Login Successful",
+            user: userResponse 
+        });
 
     } catch (error) {
         console.error("Login Error:", error);
@@ -125,7 +155,19 @@ export const handleUserSignup = async (req, res) => {
             maxAge: 7 * 24 * 60 * 60 * 1000,
         })
 
-        return res.status(201).json({ message: "User registered successfully" });
+        // Return user data (without password) along with success message
+        const userResponse = {
+            _id: newUser._id,
+            name: newUser.name,
+            email: newUser.email,
+            role: newUser.role,
+            avatar: newUser.avatar
+        };
+
+        return res.status(201).json({ 
+            message: "User registered successfully",
+            user: userResponse 
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).json({ error: "Server error" });

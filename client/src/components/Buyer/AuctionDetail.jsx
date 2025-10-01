@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { Link, useParams, useLocation } from "react-router";
+import { Link, useParams, useLocation, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getBuyerAuctionDetails, placeBid } from "../../api/buyerAuction.js";
-import { viewAuction } from "../../api/auction.js";
+import { viewAuction, updateAuction, deleteAuction } from "../../api/auction.js";
 import { useSellerAuth } from "../../contexts/SellerAuthContext.jsx";
 import { BuyerNavbar } from "./BuyerNavbar.jsx";
 import { useBuyerAuth } from "../../contexts/BuyerAuthContext.jsx";
@@ -68,8 +68,14 @@ const formatTimeLeft = (endDate) => {
 export const AuctionDetail = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [bidAmount, setBidAmount] = useState("");
   const [bidError, setBidError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
   const queryClient = useQueryClient();
   const { buyerUser, isAuthenticated } = useBuyerAuth();
   const { seller, isAuthenticated: isSellerAuthenticated } = useSellerAuth();
@@ -124,6 +130,29 @@ export const AuctionDetail = () => {
     }
   });
 
+  const updateAuctionMutate = useMutation({
+    mutationFn: ({ id, data }) => updateAuction(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["auction", id] });
+      setIsEditing(false);
+      alert("Auction updated successfully!");
+    },
+    onError: (error) => {
+      alert(error.response?.data?.message || "Error updating auction");
+    },
+  });
+
+  const deleteAuctionMutate = useMutation({
+    mutationFn: (id) => deleteAuction(id),
+    onSuccess: () => {
+      alert("Auction deleted successfully!");
+      navigate("/seller");
+    },
+    onError: (error) => {
+      alert(error.response?.data?.message || "Error deleting auction");
+    },
+  });
+
   const handlePlaceBid = () => {
     const amount = parseFloat(bidAmount);
     const currentPrice = auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice;
@@ -140,6 +169,71 @@ export const AuctionDetail = () => {
     
     setBidError("");
     bidMutation.mutate({ bidAmount: amount, id });
+  };
+
+  const handleEditSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData();
+    
+    // Add text fields
+    formData.append('itemName', e.target.itemName.value);
+    formData.append('itemDescription', e.target.itemDescription.value);
+    formData.append('itemCategory', e.target.itemCategory.value);
+    formData.append('itemEndDate', e.target.itemEndDate.value);
+    
+    // Add existing images that weren't removed
+    existingImages.forEach((image, index) => {
+      formData.append('existingImages', image);
+    });
+    
+    // Add new images
+    selectedImages.forEach((image, index) => {
+      formData.append('itemPhotos', image);
+    });
+    
+    updateAuctionMutate.mutate({ id, data: formData });
+  };
+
+  const handleDeleteClick = () => {
+    if (window.confirm('Are you sure you want to delete this auction? This action cannot be undone.')) {
+      deleteAuctionMutate.mutate(id);
+    }
+  };
+
+  const startEditing = () => {
+    setEditForm({
+      itemName: auction.itemName,
+      itemDescription: auction.itemDescription,
+      itemCategory: auction.itemCategory,
+      itemEndDate: auction.itemEndDate?.split('T')[0], // Format for date input
+    });
+    setExistingImages(auction.itemPhotos || []);
+    setSelectedImages([]);
+    setImagePreviews([]);
+    setIsEditing(true);
+  };
+
+  const handleImageChange = (e) => {
+    const files = Array.from(e.target.files);
+    setSelectedImages(prev => [...prev, ...files]);
+    
+    // Create previews for new images
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreviews(prev => [...prev, e.target.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const removeSelectedImage = (index) => {
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+    setImagePreviews(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
 
   if (isLoading) {
@@ -230,12 +324,179 @@ export const AuctionDetail = () => {
               {/* Bidding Section */}
               <div className="space-y-4">
                 {isOwner ? (
-                  <div className="text-center py-8 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="flex items-center justify-center mb-4">
-                      <span className="text-2xl">🏪</span>
-                    </div>
-                    <p className="text-blue-800 font-medium mb-2">Your Auction</p>
-                    <p className="text-blue-600 text-sm">This is your auction. You can manage it from your seller dashboard.</p>
+                  <div className="bg-white p-6 rounded-md shadow-md border border-gray-200">
+                    <h3 className="text-lg font-semibold mb-4">Auction Management</h3>
+                    {!isEditing ? (
+                      <div className="space-y-3">
+                        <button
+                          onClick={startEditing}
+                          disabled={auction.bids && auction.bids.length > 0}
+                          className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                            auction.bids && auction.bids.length > 0
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-blue-600 text-white hover:bg-blue-700'
+                          }`}
+                        >
+                          {auction.bids && auction.bids.length > 0 ? 'Cannot Edit (Has Bids)' : 'Edit Auction'}
+                        </button>
+                        <button
+                          onClick={handleDeleteClick}
+                          disabled={auction.bids && auction.bids.length > 0}
+                          className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                            auction.bids && auction.bids.length > 0
+                              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                              : 'bg-red-600 text-white hover:bg-red-700'
+                          }`}
+                        >
+                          {auction.bids && auction.bids.length > 0 ? 'Cannot Delete (Has Bids)' : 'Delete Auction'}
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Item Name
+                          </label>
+                          <input
+                            type="text"
+                            name="itemName"
+                            defaultValue={editForm.itemName}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Description
+                          </label>
+                          <textarea
+                            name="itemDescription"
+                            defaultValue={editForm.itemDescription}
+                            rows={4}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Category
+                          </label>
+                          <select
+                            name="itemCategory"
+                            defaultValue={editForm.itemCategory}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="Electronics">Electronics</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Home & Garden">Home & Garden</option>
+                            <option value="Sports">Sports</option>
+                            <option value="Books">Books</option>
+                            <option value="Art">Art</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            End Date
+                          </label>
+                          <input
+                            type="date"
+                            name="itemEndDate"
+                            defaultValue={editForm.itemEndDate}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        
+                        {/* Image Upload Section */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Images
+                          </label>
+                          
+                          {/* Existing Images */}
+                          {existingImages.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm text-gray-600 mb-2">Current Images:</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {existingImages.map((image, index) => (
+                                  <div key={`existing-${index}`} className="relative">
+                                    <img
+                                      src={image}
+                                      alt={`Existing ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded border"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeExistingImage(index)}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* New Image Previews */}
+                          {imagePreviews.length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-sm text-gray-600 mb-2">New Images:</p>
+                              <div className="grid grid-cols-3 gap-2">
+                                {imagePreviews.map((preview, index) => (
+                                  <div key={`preview-${index}`} className="relative">
+                                    <img
+                                      src={preview}
+                                      alt={`Preview ${index + 1}`}
+                                      className="w-full h-24 object-cover rounded border"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSelectedImage(index)}
+                                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
+                                    >
+                                      ×
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* File Input */}
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <p className="text-sm text-gray-500 mt-1">
+                            You can select multiple images. Current total: {existingImages.length + selectedImages.length} images
+                          </p>
+                        </div>
+                        
+                        <div className="flex space-x-3">
+                          <button
+                            type="submit"
+                            disabled={updateAuctionMutate.isPending}
+                            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {updateAuctionMutate.isPending ? 'Updating...' : 'Update Auction'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsEditing(false)}
+                            className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
                   </div>
                 ) : isSellerRoute ? (
                   <div className="text-center py-8 bg-orange-50 rounded-lg border border-orange-200">

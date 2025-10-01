@@ -57,6 +57,30 @@ const userSchema = new mongoose.Schema({
         ref: 'Product'
     }],
     
+    // Seller-specific business fields (using different field names to avoid conflicts)
+    businessAddress: { type: String }, // Simple address field for sellers
+    city: { type: String },
+    state: { type: String },
+    zipCode: { type: String },
+    country: { type: String },
+    businessName: { type: String },
+    businessType: {
+        type: String,
+        enum: ['Individual', 'Small Business', 'Corporation', 'Partnership', 'LLC', 'Other']
+    },
+    taxId: { type: String },
+    website: { type: String },
+    description: { type: String },
+    socialMedia: {
+        facebook: { type: String },
+        twitter: { type: String },
+        instagram: { type: String }
+    },
+    verified: {
+        type: Boolean,
+        default: false
+    },
+    
     // System tracking fields
     ipAddress: {
         type: String
