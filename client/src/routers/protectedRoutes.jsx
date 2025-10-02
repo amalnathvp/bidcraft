@@ -10,6 +10,7 @@ import Privacy from "../pages/Privacy";
 import { AuctionDetail } from "../components/Buyer/AuctionDetail.jsx";
 import { LiveAuctions } from "../components/Buyer/LiveAuctions.jsx";
 import { SellerNotifications } from "../pages/SellerNotifications.jsx";
+import { SellerBids } from "../components/Seller/SellerBids.jsx";
 
 export const protectedRoutes = [
   {
@@ -45,6 +46,11 @@ export const protectedRoutes = [
       {
         path: "notifications",
         element: <SellerNotifications />,
+        errorElement: <Error />,
+      },
+      {
+        path: "bids",
+        element: <SellerBids />,
         errorElement: <Error />,
       },
       {

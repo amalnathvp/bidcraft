@@ -13,6 +13,7 @@ import adminRouter from './routes/admin.js';
 import buyerAuthRouter from './routes/buyerAuth.js';
 import buyerAuctionRouter from './routes/buyerAuction.js';
 import notificationRouter from './routes/notification.js';
+import bidRouter from './routes/bid.js';
 
 const port = process.env.PORT || 3000;
 
@@ -34,6 +35,7 @@ app.get('/', async (req, res) => {
 app.use('/auth', userAuthRouter)
 app.use('/buyer', buyerAuthRouter)
 app.use('/buyer/auction', buyerAuctionRouter)
+app.use('/bids', bidRouter)
 app.use('/user', authenticateSeller, userRouter)
 // Remove authentication for auction routes - handle in individual route handlers
 app.use('/auction', auctionRouter);

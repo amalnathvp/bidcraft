@@ -11,6 +11,7 @@ import {
   MdOutlineHome,
   MdOutlinePrivacyTip,
   MdAdminPanelSettings,
+  MdGavel,
 } from "react-icons/md";
 import {
   IoCloseSharp,
@@ -301,26 +302,31 @@ const protectedNavLink = [
     link: "/seller/create",
     icon: <MdOutlineCreate className="mr-3 h-5 w-5" />,
   },
-  {
-    name: "View Auction",
-    link: "/seller/auction",
-    icon: <RiAuctionLine className="mr-3 h-5 w-5" />,
-  },
+  // {
+  //   name: "View Auction",
+  //   link: "/seller/auction",
+  //   icon: <RiAuctionLine className="mr-3 h-5 w-5" />,
+  // },
   {
     name: "My Auction",
     link: "/seller/myauction",
     icon: <MdAttachMoney className="mr-3 h-5 w-5" />,
   },
+  // {
+  //   name: "Bids",
+  //   link: "/seller/bids",
+  //   icon: <MdGavel className="mr-3 h-5 w-5" />,
+  // },
   {
     name: "Notifications",
     link: "/seller/notifications",
     icon: <MdMailOutline className="mr-3 h-5 w-5" />,
   },
-  {
-    name: "Profile",
-    link: "/seller/profile",
-    icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
-  },
+  // {
+  //   name: "Profile",
+  //   link: "/seller/profile",
+  //   icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
+  // },
   {
     name: "Contact",
     link: "/contact",
@@ -361,5 +367,5 @@ const getNavLinks = (userRole) => {
   if (userRole === 'admin') {
     return adminNavLink;
   }
-  return protectedNavLink.slice(0, 7); // Include Live Auctions, Create, View, My Auction, Notifications, Profile
+  return protectedNavLink.slice(0, 8); // Include Live Auctions, Create, View, My Auction, Bids, Notifications, Profile
 };

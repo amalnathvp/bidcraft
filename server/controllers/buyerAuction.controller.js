@@ -1,5 +1,6 @@
 import Product from "../models/product.js";
 import User from "../models/user.js";
+import Bid from "../models/bid.js";
 import { createNotification } from "./notification.controller.js";
 
 // View auction details (public - no auth required)
@@ -8,12 +9,29 @@ export const viewAuction = async (req, res) => {
         const { id } = req.params;
         
         if (id) {
-            // Get specific auction with comprehensive seller data
-            const auction = await Product.findById(id).populate('seller', 'name email businessName businessType city state country verified signupAt description website averageRating totalSales');
+            // Get specific auction with comprehensive seller data and populated bids
+            const auction = await Product.findById(id)
+                .populate('seller', 'name email businessName businessType city state country verified signupAt description website averageRating totalSales')
+                .populate('bids.bidder', 'name email'); // Populate bidder information
+            
             if (!auction) {
                 return res.status(404).json({ message: "Auction not found" });
             }
-            res.status(200).json({ auction });
+            
+            // Transform bids to include bidder info directly for easier frontend access
+            const transformedAuction = auction.toObject();
+            if (transformedAuction.bids && transformedAuction.bids.length > 0) {
+                transformedAuction.bids = transformedAuction.bids.map(bid => ({
+                    _id: bid._id,
+                    bidAmount: bid.amount,
+                    bidTime: bid.timestamp,
+                    buyerName: bid.bidder?.name || 'Anonymous',
+                    buyerEmail: bid.bidder?.email || 'Not available',
+                    buyerId: bid.bidder?._id
+                }));
+            }
+            
+            res.status(200).json({ auction: transformedAuction });
         } else {
             // Get all active auctions with basic seller info
             const auctions = await Product.find({
@@ -79,6 +97,36 @@ export const placeBid = async (req, res) => {
 
         // Get buyer info for response
         const buyer = await User.findById(buyerId).select('name email firstName lastName');
+
+        // Create separate bid record in Bid collection
+        try {
+            const newBid = new Bid({
+                auctionId: auction._id,
+                sellerId: auction.seller,
+                buyerId: buyerId,
+                buyerName: buyer.firstName || buyer.name,
+                buyerEmail: buyer.email,
+                bidAmount: bidAmount,
+                auctionTitle: auction.itemName
+            });
+
+            // Update previous bids status for this auction
+            await Bid.updateMany(
+                { 
+                    auctionId: auction._id, 
+                    buyerId: { $ne: buyerId } 
+                },
+                { $set: { status: 'outbid' } }
+            );
+
+            // Set current bid as winning
+            newBid.status = 'winning';
+            await newBid.save();
+
+        } catch (bidError) {
+            console.error('Failed to create bid record:', bidError);
+            // Don't fail the auction bid if separate bid record creation fails
+        }
 
         // Create notification for seller
         try {

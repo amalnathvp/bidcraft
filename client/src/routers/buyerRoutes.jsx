@@ -4,6 +4,7 @@ import { LiveAuctions } from "../components/Buyer/LiveAuctions";
 import { AuctionDetail } from "../components/Buyer/AuctionDetail";
 import { BuyerLogin } from "../components/Buyer/BuyerLogin";
 import { BuyerSignup } from "../components/Buyer/BuyerSignup";
+import { SavedItems } from "../components/Buyer/SavedItems";
 
 export const buyerRoutes = [
   {
@@ -14,6 +15,11 @@ export const buyerRoutes = [
   {
     path: "/live-auctions",
     element: <LiveAuctions />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/saved",
+    element: <SavedItems />,
     errorElement: <Error />,
   },
   // Primary auction detail route for buyers

@@ -120,14 +120,28 @@ export const auctionById = async (req, res) => {
         const { id } = req.params;
         const auction = await Product.findById(id)
             .populate("seller", "name email businessName businessType city state country verified signupAt description website averageRating totalSales")
-            .populate("bids.bidder", "name");
+            .populate("bids.bidder", "name email");
         
         if (!auction) {
             return res.status(404).json({ message: "Auction not found" });
         }
         
-        auction.bids.sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime));
-        res.status(200).json(auction);
+        // Transform the auction data to match frontend expectations
+        const transformedAuction = auction.toObject();
+        if (transformedAuction.bids && transformedAuction.bids.length > 0) {
+            transformedAuction.bids = transformedAuction.bids.map(bid => ({
+                _id: bid._id,
+                bidAmount: bid.amount,
+                bidTime: bid.timestamp,
+                buyerName: bid.bidder?.name || 'Anonymous',
+                buyerEmail: bid.bidder?.email || 'Not available',
+                buyerId: bid.bidder?._id
+            }));
+            // Sort by newest first
+            transformedAuction.bids.sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime));
+        }
+        
+        res.status(200).json(transformedAuction);
     } catch (error) {
         return res.status(500).json({ message: 'Error fetching auction', error: error.message });
     }

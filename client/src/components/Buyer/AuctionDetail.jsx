@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { Link, useParams, useLocation, useNavigate } from "react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getBuyerAuctionDetails, placeBid } from "../../api/buyerAuction.js";
+import { getBuyerAuctionDetails, placeBid, addToWatchlist, removeFromWatchlist, getWatchlist } from "../../api/buyerAuction.js";
 import { viewAuction, updateAuction, deleteAuction } from "../../api/auction.js";
+import { getAuctionBids } from "../../api/bid.js";
 import { useSellerAuth } from "../../contexts/SellerAuthContext.jsx";
 import { BuyerNavbar } from "./BuyerNavbar.jsx";
 import { useBuyerAuth } from "../../contexts/BuyerAuthContext.jsx";
@@ -122,6 +123,54 @@ export const AuctionDetail = () => {
     enabled: !!auction?.seller?._id && showOtherItems
   });
 
+  // Query for buyer's watchlist to check if this item is already saved
+  const { data: watchlist } = useQuery({
+    queryKey: ["watchlist"],
+    queryFn: getWatchlist,
+    enabled: !!isAuthenticated && !isSellerRoute && !!auction, // Only fetch for authenticated buyers when auction is loaded
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Query for auction bids from separate collection (for sellers only)
+  const { data: auctionBidsData, isLoading: bidsLoading } = useQuery({
+    queryKey: ["auctionBids", auction?._id],
+    queryFn: () => getAuctionBids(auction._id),
+    enabled: !!isSellerRoute && !!isSellerAuthenticated && !!auction?._id, // Only fetch for authenticated sellers when auction is loaded
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+
+  // Check if current auction is in watchlist
+  const isInWatchlist = React.useMemo(() => {
+    if (!watchlist || !auction || !auction._id || !Array.isArray(watchlist)) return false;
+    return watchlist.some(item => {
+      // Handle different possible data structures
+      const itemId = item?.auction?._id || item?._id || item?.auctionId;
+      const auctionId = auction._id;
+      return itemId && auctionId && itemId === auctionId;
+    });
+  }, [watchlist, auction]);
+
+  // Watchlist mutations
+  const addToWatchlistMutation = useMutation({
+    mutationFn: (auctionId) => addToWatchlist(auctionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+    onError: (error) => {
+      console.error('Error adding to watchlist:', error);
+    }
+  });
+
+  const removeFromWatchlistMutation = useMutation({
+    mutationFn: (auctionId) => removeFromWatchlist(auctionId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["watchlist"] });
+    },
+    onError: (error) => {
+      console.error('Error removing from watchlist:', error);
+    }
+  });
+
   // Check if current seller is the owner of this auction (after data loads)
   const isOwner = React.useMemo(() => {
     if (!isSellerRoute || !isSellerAuthenticated || !seller || !auction) return false;
@@ -166,6 +215,7 @@ export const AuctionDetail = () => {
       setBidAmount("");
       setBidError("");
       queryClient.invalidateQueries({ queryKey: ["auction", id] });
+      queryClient.invalidateQueries({ queryKey: ["auctionBids", id] }); // Also invalidate the separate bids collection
     },
     onError: (error) => {
       setBidError(error.message || "Failed to place bid");
@@ -404,9 +454,79 @@ export const AuctionDetail = () => {
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid lg:grid-cols-2 gap-12">
-          {/* Left Column - Images */}
-          <div>
+          {/* Left Column - Images and Bidders (for sellers) */}
+          <div className="space-y-6">
             <ImageGallery images={auctionImages} itemName={auction.itemName} />
+            
+            {/* Bidders List - Only visible to auction owner (seller) */}
+            {isOwner && (
+              <div className="bg-white rounded-lg p-6 shadow-sm">
+                {bidsLoading ? (
+                  <div className="animate-pulse">
+                    <div className="h-6 bg-gray-300 rounded w-1/2 mb-4"></div>
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="h-16 bg-gray-300 rounded"></div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4">
+                      Bidding History ({auctionBidsData?.bids?.length || 0} {(auctionBidsData?.bids?.length || 0) === 1 ? 'bid' : 'bids'})
+                    </h3>
+                    
+                    {auctionBidsData?.bids && auctionBidsData.bids.length > 0 ? (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {auctionBidsData.bids.map((bid, index) => (
+                          <div key={bid._id || index} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <span className="text-blue-600 font-semibold text-sm">
+                                  {bid.buyerName ? bid.buyerName.charAt(0).toUpperCase() : 'B'}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-semibold text-gray-900">
+                                  {bid.buyerName || 'Anonymous Bidder'}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {bid.buyerEmail || 'Email not available'}
+                                </p>
+                                <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mt-1 ${
+                                  bid.status === 'winning' 
+                                    ? 'bg-green-100 text-green-800'
+                                    : bid.status === 'outbid'
+                                    ? 'bg-red-100 text-red-800'
+                                    : 'bg-blue-100 text-blue-800'
+                                }`}>
+                                  {bid.status}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-lg font-bold text-green-600">
+                                ${bid.bidAmount.toLocaleString()}
+                              </p>
+                              <p className="text-sm text-gray-500">
+                                {new Date(bid.bidTime).toLocaleString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500 text-center py-8">No bids placed yet</p>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column - Auction Details */}
@@ -648,8 +768,36 @@ export const AuctionDetail = () => {
                       </button>
                     </div>
 
-                    <button className="w-full border-2 border-orange-600 text-orange-600 py-3 px-6 rounded-lg font-semibold hover:bg-orange-50">
-                      Watch Item
+                    <button 
+                      onClick={() => {
+                        if (!isAuthenticated) {
+                          navigate('/buyer/login');
+                          return;
+                        }
+                        
+                        if (!auction || !auction._id) {
+                          console.error('No auction data available');
+                          return;
+                        }
+                        
+                        if (isInWatchlist) {
+                          removeFromWatchlistMutation.mutate(auction._id);
+                        } else {
+                          addToWatchlistMutation.mutate(auction._id);
+                        }
+                      }}
+                      disabled={addToWatchlistMutation.isPending || removeFromWatchlistMutation.isPending}
+                      className={`w-full border-2 py-3 px-6 rounded-lg font-semibold transition-colors flex items-center justify-center gap-2 ${
+                        isInWatchlist 
+                          ? 'border-red-600 bg-red-600 text-white hover:bg-red-700' 
+                          : 'border-orange-600 text-orange-600 hover:bg-orange-50'
+                      } disabled:opacity-50`}
+                    >
+                      <span>{isInWatchlist ? '❤️' : '🤍'}</span>
+                      {addToWatchlistMutation.isPending || removeFromWatchlistMutation.isPending 
+                        ? 'Loading...' 
+                        : (isInWatchlist ? 'Saved to Watchlist' : 'Watch Item')
+                      }
                     </button>
 
                     {/* Bid Input */}

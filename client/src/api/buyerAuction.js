@@ -108,3 +108,6 @@ export const getBuyerWatchlist = async () => {
   const data = await response.json();
   return data.watchlist;
 };
+
+// Alias for consistency with import naming
+export const getWatchlist = getBuyerWatchlist;
