@@ -16,9 +16,27 @@ export const buyerRoutes = [
     element: <LiveAuctions />,
     errorElement: <Error />,
   },
+  // Primary auction detail route for buyers
   {
     path: "/auction/:id",
     element: <AuctionDetail />,
+    errorElement: <Error />,
+  },
+  // Additional buyer-accessible auction routes
+  {
+    path: "/auctions/:id", // Alternative plural form
+    element: <AuctionDetail />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/view-auction/:id", // Alternative view form
+    element: <AuctionDetail />,
+    errorElement: <Error />,
+  },
+  // Buyer auction browsing routes
+  {
+    path: "/browse-auctions",
+    element: <LiveAuctions />,
     errorElement: <Error />,
   },
   {

@@ -4,9 +4,10 @@ import {
     markAsRead, 
     markAllAsRead, 
     deleteNotification, 
-    getUnreadCount 
+    getUnreadCount,
+    contactSeller 
 } from '../controllers/notification.controller.js';
-import { authenticateSeller } from '../middleware/roleAuth.js';
+import { authenticateSeller, authenticateBuyer, authenticate } from '../middleware/roleAuth.js';
 
 const router = express.Router();
 
@@ -15,6 +16,9 @@ router.get('/', authenticateSeller, getNotifications);
 
 // Get unread count
 router.get('/unread-count', authenticateSeller, getUnreadCount);
+
+// Contact seller (any authenticated user can contact seller, but not themselves)
+router.post('/contact-seller', authenticate, contactSeller);
 
 // Mark notification as read
 router.patch('/:id/read', authenticateSeller, markAsRead);

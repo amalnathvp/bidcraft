@@ -79,23 +79,36 @@ export const getSellerProfile = async (req, res) => {
         const completedFields = profileFields.filter(field => field && field.toString().trim()).length;
         const completionPercentage = Math.round((completedFields / profileFields.length) * 100);
 
-        // Get seller statistics (you can expand this based on your auction model)
-        const stats = {
-            totalAuctions: 0, // You'll need to count from your auction model
-            activeAuctions: 0,
-            completedAuctions: 0,
-            totalRevenue: 0,
-            avgRating: 0,
-            totalReviews: 0
+        // Calculate seller statistics from Product model
+        const Product = (await import('../models/product.js')).default;
+        
+        const totalAuctions = await Product.countDocuments({ seller: userId });
+        const activeAuctions = await Product.countDocuments({ 
+            seller: userId, 
+            itemEndDate: { $gt: new Date() } 
+        });
+        const completedAuctions = await Product.countDocuments({ 
+            seller: userId, 
+            itemEndDate: { $lte: new Date() } 
+        });
+
+        // Add calculated stats to user object
+        const userWithStats = {
+            ...user.toObject(),
+            completionPercentage,
+            stats: {
+                totalAuctions,
+                activeAuctions,
+                completedAuctions,
+                totalRevenue: 0, // Can be calculated from successful auctions
+                avgRating: 0,    // Can be calculated from reviews
+                totalReviews: 0  // Can be calculated from reviews
+            }
         };
 
         res.status(200).json({
             success: true,
-            user: {
-                ...user.toObject(),
-                completionPercentage,
-                stats
-            }
+            user: userWithStats
         });
 
     } catch (error) {

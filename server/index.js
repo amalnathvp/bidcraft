@@ -14,7 +14,7 @@ import buyerAuthRouter from './routes/buyerAuth.js';
 import buyerAuctionRouter from './routes/buyerAuction.js';
 import notificationRouter from './routes/notification.js';
 
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 3000;
 
 connectDB();
 
@@ -35,8 +35,9 @@ app.use('/auth', userAuthRouter)
 app.use('/buyer', buyerAuthRouter)
 app.use('/buyer/auction', buyerAuctionRouter)
 app.use('/user', authenticateSeller, userRouter)
-app.use('/auction', authenticateSeller, auctionRouter);
-app.use('/notifications', authenticateSeller, notificationRouter);
+// Remove authentication for auction routes - handle in individual route handlers
+app.use('/auction', auctionRouter);
+app.use('/notifications', notificationRouter);
 app.use('/contact', contactRouter);
 app.use('/admin', authenticateAdmin, adminRouter)
 

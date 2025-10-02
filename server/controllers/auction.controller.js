@@ -119,12 +119,17 @@ export const auctionById = async (req, res) => {
         await connectDB();
         const { id } = req.params;
         const auction = await Product.findById(id)
-            .populate("seller", "name")
+            .populate("seller", "name email businessName businessType city state country verified signupAt description website averageRating totalSales")
             .populate("bids.bidder", "name");
+        
+        if (!auction) {
+            return res.status(404).json({ message: "Auction not found" });
+        }
+        
         auction.bids.sort((a, b) => new Date(b.bidTime) - new Date(a.bidTime));
         res.status(200).json(auction);
     } catch (error) {
-        return res.status(500).json({ message: 'Error fetching auctions', error: error.message });
+        return res.status(500).json({ message: 'Error fetching auction', error: error.message });
     }
 }
 

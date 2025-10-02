@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
     },
   },
 });
-const router = createBrowserRouter([...adminRouter,...protectedRoutes, ...buyerRoutes, ...openRoutes]);
+const router = createBrowserRouter([...adminRouter, ...buyerRoutes, ...protectedRoutes, ...openRoutes]);
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

@@ -1,24 +1,22 @@
 import express from 'express';
 import { createAuction, showAuction, auctionById, placeBid, dashboardData, myAuction, updateAuction, deleteAuction } from '../controllers/auction.controller.js';
+import { authenticateSeller } from '../middleware/roleAuth.js';
 import upload from '../middleware/multer.js';
 
 const auctionRouter = express.Router();
 
-auctionRouter
-    .get('/stats', dashboardData)
+// Seller-only routes (authentication required) - specific routes first
+auctionRouter.get('/stats', authenticateSeller, dashboardData);
+auctionRouter.get('/myauction', authenticateSeller, myAuction);
+auctionRouter.get('/', authenticateSeller, showAuction);
+auctionRouter.post('/', authenticateSeller, upload.array('itemPhotos', 5), createAuction);
 
-auctionRouter
-    .get('/', showAuction)
-    .post('/', upload.array('itemPhotos', 5), createAuction);
+// Dynamic routes with authentication for actions
+auctionRouter.post('/:id', authenticateSeller, placeBid);
+auctionRouter.put('/:id', authenticateSeller, upload.array('itemPhotos', 5), updateAuction);
+auctionRouter.delete('/:id', authenticateSeller, deleteAuction);
 
-auctionRouter
-.get("/myauction", myAuction)
-
-auctionRouter
-    .get('/:id', auctionById)
-    .post('/:id', placeBid)
-    .put('/:id', upload.array('itemPhotos', 5), updateAuction)
-    .delete('/:id', deleteAuction)
-
+// Public routes (no authentication required) - put at the end
+auctionRouter.get('/:id', auctionById); // Allow public viewing of auction details
 
 export default auctionRouter;

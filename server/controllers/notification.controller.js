@@ -132,3 +132,58 @@ export const createNotification = async (notificationData) => {
         throw error;
     }
 };
+
+// Contact seller - creates a notification for the seller
+export const contactSeller = async (req, res) => {
+    try {
+        const { sellerId, auctionId, subject, message, buyerName, buyerEmail } = req.body;
+        const userId = req.user?.id;
+
+        if (!sellerId || !message || !subject) {
+            return res.status(400).json({ 
+                message: 'Missing required fields: sellerId, subject, and message are required' 
+            });
+        }
+
+        // Prevent users from contacting themselves
+        if (userId === sellerId) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot send a message to yourself'
+            });
+        }
+
+        // Create notification for the seller
+        const notificationData = {
+            recipient: sellerId,
+            type: 'contact_message',
+            title: `New message: ${subject}`,
+            message: `${buyerName || 'A user'} sent you a message: "${message}"`,
+            auction: auctionId || null,
+            metadata: {
+                senderId: userId,
+                senderName: buyerName,
+                senderEmail: buyerEmail,
+                subject: subject,
+                originalMessage: message,
+                contactedAt: new Date()
+            }
+        };
+
+        const notification = await createNotification(notificationData);
+
+        res.status(200).json({
+            success: true,
+            message: 'Message sent to seller successfully',
+            notificationId: notification._id
+        });
+
+    } catch (error) {
+        console.error('Contact seller error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Failed to send message to seller', 
+            error: error.message 
+        });
+    }
+};

@@ -28,11 +28,8 @@ export default defineConfig({
       '/user': {
         target: 'http://localhost:3000',
         changeOrigin: true
-      },
-      '/auction': {
-        target: 'http://localhost:3000',
-        changeOrigin: true
       }
+      // Removed '/auction' proxy to allow React router to handle /auction/* routes
     },
     hmr: process.env.DISABLE_HMR === 'true' ? false : {
       port: 5174, // Use different port for HMR to avoid conflicts

@@ -8,17 +8,17 @@ export const viewAuction = async (req, res) => {
         const { id } = req.params;
         
         if (id) {
-            // Get specific auction
-            const auction = await Product.findById(id).populate('seller', 'name email');
+            // Get specific auction with comprehensive seller data
+            const auction = await Product.findById(id).populate('seller', 'name email businessName businessType city state country verified signupAt description website averageRating totalSales');
             if (!auction) {
                 return res.status(404).json({ message: "Auction not found" });
             }
             res.status(200).json({ auction });
         } else {
-            // Get all active auctions
+            // Get all active auctions with basic seller info
             const auctions = await Product.find({
                 itemEndDate: { $gt: new Date() } // Only active auctions
-            }).populate('seller', 'name email').sort({ createdAt: -1 });
+            }).populate('seller', 'name email businessName city state verified').sort({ createdAt: -1 });
             
             res.status(200).json({ auctions });
         }
@@ -249,6 +249,46 @@ export const getWatchlist = async (req, res) => {
         res.status(200).json({ watchlist });
     } catch (error) {
         console.error("Get watchlist error:", error);
+        res.status(500).json({ message: "Server error", error: error.message });
+    }
+};
+
+// Get auctions by specific seller
+export const getAuctionsBySeller = async (req, res) => {
+    try {
+        const { sellerId } = req.params;
+
+        if (!sellerId) {
+            return res.status(400).json({ message: "Seller ID is required" });
+        }
+
+        // Get all auctions by this seller (both active and ended)
+        const auctions = await Product.find({
+            seller: sellerId
+        }).populate('seller', 'name email businessName city state verified')
+          .sort({ createdAt: -1 });
+
+        // Separate active and ended auctions
+        const now = new Date();
+        const activeAuctions = auctions.filter(auction => new Date(auction.itemEndDate) > now);
+        const endedAuctions = auctions.filter(auction => new Date(auction.itemEndDate) <= now);
+
+        res.status(200).json({
+            success: true,
+            seller: auctions.length > 0 ? auctions[0].seller : null,
+            auctions: {
+                active: activeAuctions,
+                ended: endedAuctions,
+                total: auctions
+            },
+            stats: {
+                totalAuctions: auctions.length,
+                activeAuctions: activeAuctions.length,
+                endedAuctions: endedAuctions.length
+            }
+        });
+    } catch (error) {
+        console.error("Get auctions by seller error:", error);
         res.status(500).json({ message: "Server error", error: error.message });
     }
 };

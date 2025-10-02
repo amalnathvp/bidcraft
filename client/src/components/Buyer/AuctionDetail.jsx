@@ -76,6 +76,21 @@ export const AuctionDetail = () => {
   const [selectedImages, setSelectedImages] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [existingImages, setExistingImages] = useState([]);
+  
+  // New state for modals
+  const [showSellerProfile, setShowSellerProfile] = useState(false);
+  const [showContactForm, setShowContactForm] = useState(false);
+  const [showOtherItems, setShowOtherItems] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    subject: "",
+    message: "",
+    buyerName: "",
+    buyerEmail: ""
+  });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState("");
+  const [contactError, setContactError] = useState("");
+  
   const queryClient = useQueryClient();
   const { buyerUser, isAuthenticated } = useBuyerAuth();
   const { seller, isAuthenticated: isSellerAuthenticated } = useSellerAuth();
@@ -85,7 +100,26 @@ export const AuctionDetail = () => {
   
   const { data: auction, isLoading, error } = useQuery({
     queryKey: ["auction", id],
-    queryFn: () => isSellerRoute ? viewAuction(id) : getBuyerAuctionDetails(id),
+    queryFn: () => {
+      // Always use buyer API for better compatibility and public access
+      if (isSellerRoute) {
+        return viewAuction(id);
+      } else {
+        // For buyer routes, always use the buyer API endpoint
+        return getBuyerAuctionDetails(id);
+      }
+    },
+    retry: 3,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Query for other items by the same seller
+  const { data: sellerItems, isLoading: sellerItemsLoading } = useQuery({
+    queryKey: ["sellerItems", auction?.seller?._id],
+    queryFn: () => fetch(`/api/buyer/auction/seller/${auction?.seller?._id}`, {
+      credentials: 'include'
+    }).then(res => res.json()),
+    enabled: !!auction?.seller?._id && showOtherItems
   });
 
   // Check if current seller is the owner of this auction (after data loads)
@@ -115,7 +149,15 @@ export const AuctionDetail = () => {
     sellerId: seller?.user?._id,
     auctionSellerId: auction?.seller?._id || auction?.seller,
     isOwner,
-    auction: auction ? 'loaded' : 'not loaded'
+    auction: auction ? 'loaded' : 'not loaded',
+    // Buyer auth debugging
+    buyerAuthenticated: isAuthenticated,
+    buyerUser: buyerUser ? 'loaded' : 'not loaded',
+    buyerUserId: buyerUser?._id,
+    buyerUserRole: buyerUser?.role,
+    // Combined auth debugging
+    anyAuthenticated: isAuthenticated || isSellerAuthenticated,
+    currentUser: buyerUser || seller?.user ? 'loaded' : 'not loaded'
   });
 
   const bidMutation = useMutation({
@@ -235,6 +277,88 @@ export const AuctionDetail = () => {
   const removeExistingImage = (index) => {
     setExistingImages(prev => prev.filter((_, i) => i !== index));
   };
+
+  // Handle contact form
+  const handleContactFormChange = (e) => {
+    const { name, value } = e.target;
+    setContactForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactLoading(true);
+    setContactError("");
+    
+    // Get current user for form data (but don't block submission)
+    const currentUser = buyerUser || seller?.user;
+    
+    // Check if user is trying to contact themselves (only check if we have user data)
+    if (currentUser && auction?.seller) {
+      const currentUserId = currentUser._id || currentUser.id;
+      const auctionSellerId = auction.seller._id || auction.seller;
+      
+      if (currentUserId === auctionSellerId) {
+        setContactError("You cannot contact yourself.");
+        setContactLoading(false);
+        return;
+      }
+    }
+    
+    try {
+      const response = await fetch('/api/notifications/contact-seller', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          sellerId: auction.seller._id,
+          auctionId: auction._id,
+          subject: contactForm.subject,
+          message: contactForm.message,
+          buyerName: contactForm.buyerName || currentUser?.firstName || currentUser?.name || 'Anonymous',
+          buyerEmail: contactForm.buyerEmail || currentUser?.email || ''
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        setContactSuccess("Message sent successfully!");
+        setContactForm({ subject: "", message: "", buyerName: "", buyerEmail: "" });
+        setTimeout(() => {
+          setShowContactForm(false);
+          setContactSuccess("");
+        }, 2000);
+      } else {
+        // Handle specific error responses
+        if (response.status === 401) {
+          setContactError("Please log in to contact the seller.");
+        } else if (response.status === 403) {
+          setContactError("You don't have permission to contact the seller.");
+        } else {
+          setContactError(data.message || "Failed to send message");
+        }
+      }
+    } catch (error) {
+      console.error('Contact seller error:', error);
+      setContactError("Failed to send message. Please try again.");
+    } finally {
+      setContactLoading(false);
+    }
+  };
+
+  // Initialize contact form with current user data
+  React.useEffect(() => {
+    const currentUser = buyerUser || seller?.user;
+    if (currentUser && showContactForm) {
+      setContactForm(prev => ({
+        ...prev,
+        buyerName: currentUser.firstName || currentUser.name || "",
+        buyerEmail: currentUser.email || ""
+      }));
+    }
+  }, [buyerUser, seller, showContactForm]);
 
   if (isLoading) {
     return (
@@ -577,33 +701,97 @@ export const AuctionDetail = () => {
               <h3 className="text-xl font-bold text-gray-900 mb-4">Seller Information</h3>
               <div className="flex justify-between items-start">
                 <div>
-                  <h4 className="font-semibold text-lg">KashmirCrafts</h4>
+                  <h4 className="font-semibold text-lg">
+                    {auction.seller?.businessName || auction.seller?.name || "Unknown Seller"}
+                  </h4>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-yellow-500">⭐</span>
-                    <span className="font-medium">4.9 (156 sales)</span>
+                    <span className="font-medium">
+                      {auction.seller?.averageRating ? 
+                        `${auction.seller.averageRating} (${auction.seller.totalSales || 0} sales)` : 
+                        "No ratings yet"
+                      }
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-green-600">✓</span>
-                    <span className="text-green-600 font-medium">Verified</span>
+                    <span className={auction.seller?.verified ? "text-green-600" : "text-gray-400"}>
+                      {auction.seller?.verified ? "✓" : "○"}
+                    </span>
+                    <span className={`font-medium ${auction.seller?.verified ? "text-green-600" : "text-gray-500"}`}>
+                      {auction.seller?.verified ? "Verified" : "Unverified"}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 mb-4">
                     <span>📍</span>
-                    <span className="text-gray-600">Srinagar, Kashmir</span>
+                    <span className="text-gray-600">
+                      {auction.seller?.city && auction.seller?.state ? 
+                        `${auction.seller.city}, ${auction.seller.state}` :
+                        auction.seller?.city || 
+                        auction.seller?.country || 
+                        "Location not specified"
+                      }
+                    </span>
                   </div>
-                  <p className="text-sm text-gray-600">Member since 2019</p>
+                  <p className="text-sm text-gray-600">
+                    Member since {auction.seller?.signupAt ? 
+                      new Date(auction.seller.signupAt).getFullYear() : 
+                      "Unknown"
+                    }
+                  </p>
+                  {auction.seller?.description && (
+                    <p className="text-sm text-gray-600 mt-2 italic">
+                      "{auction.seller.description}"
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <button className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200">
+                  <button 
+                    onClick={() => setShowSellerProfile(true)}
+                    className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200"
+                  >
                     View Profile
                   </button>
-                  <button className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200">
+                  <button 
+                    onClick={() => setShowContactForm(true)}
+                    className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200"
+                  >
                     Contact Seller
                   </button>
-                  <button className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200">
+                  <button 
+                    onClick={() => setShowOtherItems(true)}
+                    className="block w-full bg-orange-100 text-orange-800 px-4 py-2 rounded-lg font-medium hover:bg-orange-200"
+                  >
                     Other Items
                   </button>
                 </div>
               </div>
+              
+              {/* Additional Business Information */}
+              {(auction.seller?.businessType || auction.seller?.website) && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  {auction.seller?.businessType && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span>🏢</span>
+                      <span className="text-sm text-gray-600">
+                        Business Type: {auction.seller.businessType}
+                      </span>
+                    </div>
+                  )}
+                  {auction.seller?.website && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span>🌐</span>
+                      <a 
+                        href={auction.seller.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                      >
+                        Visit Website
+                      </a>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Item Description */}
@@ -618,6 +806,275 @@ export const AuctionDetail = () => {
             </div>
           </div>
         </div>
+
+        {/* Seller Profile Modal */}
+        {showSellerProfile && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-2xl font-bold">Seller Profile</h2>
+                <button 
+                  onClick={() => setShowSellerProfile(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center">
+                    {auction.seller?.avatar ? (
+                      <img 
+                        src={auction.seller.avatar} 
+                        alt={auction.seller.name}
+                        className="w-16 h-16 rounded-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-2xl">👤</span>
+                    )}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold">
+                      {auction.seller?.businessName || auction.seller?.name || "Unknown Seller"}
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <span className={auction.seller?.verified ? "text-green-600" : "text-gray-400"}>
+                        {auction.seller?.verified ? "✓" : "○"}
+                      </span>
+                      <span className={`text-sm ${auction.seller?.verified ? "text-green-600" : "text-gray-500"}`}>
+                        {auction.seller?.verified ? "Verified Seller" : "Unverified"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Contact Information</h4>
+                    <p className="text-sm text-gray-600">Email: {auction.seller?.email || "Not provided"}</p>
+                    {auction.seller?.phone && (
+                      <p className="text-sm text-gray-600">Phone: {auction.seller.phone}</p>
+                    )}
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Location</h4>
+                    <p className="text-sm text-gray-600">
+                      {auction.seller?.city && auction.seller?.state ? 
+                        `${auction.seller.city}, ${auction.seller.state}` :
+                        auction.seller?.city || 
+                        auction.seller?.country || 
+                        "Location not specified"
+                      }
+                    </p>
+                  </div>
+
+                  {auction.seller?.businessType && (
+                    <div>
+                      <h4 className="font-semibold text-gray-700">Business Type</h4>
+                      <p className="text-sm text-gray-600">{auction.seller.businessType}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Member Since</h4>
+                    <p className="text-sm text-gray-600">
+                      {auction.seller?.signupAt ? 
+                        new Date(auction.seller.signupAt).getFullYear() : 
+                        "Unknown"
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {auction.seller?.description && (
+                  <div>
+                    <h4 className="font-semibold text-gray-700">About</h4>
+                    <p className="text-sm text-gray-600">{auction.seller.description}</p>
+                  </div>
+                )}
+
+                {auction.seller?.website && (
+                  <div>
+                    <h4 className="font-semibold text-gray-700">Website</h4>
+                    <a 
+                      href={auction.seller.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-sm text-blue-600 hover:text-blue-800 underline"
+                    >
+                      {auction.seller.website}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Contact Seller Modal */}
+        {showContactForm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Contact Seller</h2>
+                <button 
+                  onClick={() => setShowContactForm(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {contactSuccess && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                  {contactSuccess}
+                </div>
+              )}
+
+              {contactError && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                  {contactError}
+                </div>
+              )}
+
+              <form onSubmit={handleContactSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
+                  <input
+                    type="text"
+                    name="buyerName"
+                    value={contactForm.buyerName}
+                    onChange={handleContactFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Your Email</label>
+                  <input
+                    type="email"
+                    name="buyerEmail"
+                    value={contactForm.buyerEmail}
+                    onChange={handleContactFormChange}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+                  <input
+                    type="text"
+                    name="subject"
+                    value={contactForm.subject}
+                    onChange={handleContactFormChange}
+                    placeholder="e.g., Question about this auction"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                  <textarea
+                    name="message"
+                    value={contactForm.message}
+                    onChange={handleContactFormChange}
+                    rows={4}
+                    placeholder="Enter your message here..."
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    type="submit"
+                    disabled={contactLoading}
+                    className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {contactLoading ? "Sending..." : "Send Message"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowContactForm(false)}
+                    className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Other Items Modal */}
+        {showOtherItems && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Other Items by {auction.seller?.businessName || auction.seller?.name}</h2>
+                <button 
+                  onClick={() => setShowOtherItems(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {sellerItemsLoading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-4 text-gray-600">Loading seller's items...</p>
+                </div>
+              ) : sellerItems?.auctions?.total?.length > 0 ? (
+                <div>
+                  <div className="mb-4 text-sm text-gray-600">
+                    {sellerItems.stats.totalAuctions} total items • {sellerItems.stats.activeAuctions} active • {sellerItems.stats.endedAuctions} ended
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {sellerItems.auctions.total
+                      .filter(item => item._id !== auction._id) // Exclude current auction
+                      .map((item) => (
+                      <div key={item._id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                        <img 
+                          src={item.itemPhotos?.[0] || "/api/placeholder/200/150"} 
+                          alt={item.itemName}
+                          className="w-full h-32 object-cover rounded mb-2"
+                        />
+                        <h3 className="font-semibold text-sm mb-1 line-clamp-2">{item.itemName}</h3>
+                        <p className="text-blue-600 font-bold">${item.currentPrice || item.startingPrice}</p>
+                        <p className="text-xs text-gray-500 mb-2">
+                          {new Date(item.itemEndDate) > new Date() ? 
+                            `Ends: ${new Date(item.itemEndDate).toLocaleDateString()}` :
+                            "Auction Ended"
+                          }
+                        </p>
+                        <button
+                          onClick={() => {
+                            setShowOtherItems(false);
+                            navigate(isSellerRoute ? `/seller/auction/${item._id}` : `/auction/${item._id}`);
+                          }}
+                          className="w-full bg-blue-600 text-white py-1 px-2 rounded text-sm hover:bg-blue-700"
+                        >
+                          View Item
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  This seller has no other items listed.
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
