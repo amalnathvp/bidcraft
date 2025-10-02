@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['bid_placed', 'auction_won', 'auction_ended', 'new_bid'],
+        enum: ['bid_placed', 'auction_won', 'auction_ended', 'new_bid', 'contact_message'],
         required: true,
     },
     title: {
@@ -40,6 +40,10 @@ const notificationSchema = new mongoose.Schema({
     isDeleted: {
         type: Boolean,
         default: false,
+    },
+    metadata: {
+        type: mongoose.Schema.Types.Mixed,
+        required: false,
     }
 }, { timestamps: true });
 

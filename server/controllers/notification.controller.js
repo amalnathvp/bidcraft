@@ -156,11 +156,12 @@ export const contactSeller = async (req, res) => {
         // Create notification for the seller
         const notificationData = {
             recipient: sellerId,
-            type: 'contact_message',
+            type: 'new_bid', // Using existing enum value temporarily
             title: `New message: ${subject}`,
             message: `${buyerName || 'A user'} sent you a message: "${message}"`,
             auction: auctionId || null,
             metadata: {
+                isContactMessage: true, // Flag to identify this as a contact message
                 senderId: userId,
                 senderName: buyerName,
                 senderEmail: buyerEmail,
