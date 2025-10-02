@@ -4,6 +4,7 @@ import { LiveAuctions } from "../components/Buyer/LiveAuctions";
 import { AuctionDetail } from "../components/Buyer/AuctionDetail";
 import { BuyerLogin } from "../components/Buyer/BuyerLogin";
 import { BuyerSignup } from "../components/Buyer/BuyerSignup";
+import { BuyerProfile } from "../components/Buyer/BuyerProfile";
 import { SavedItems } from "../components/Buyer/SavedItems";
 import BuyerNotifications from "../pages/BuyerNotifications";
 import { DeliveryAddress } from "../pages/DeliveryAddress";
@@ -40,6 +41,11 @@ export const buyerRoutes = [
   {
     path: "/buyer/notifications",
     element: <BuyerNotifications />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/buyer/profile",
+    element: <BuyerProfile />,
     errorElement: <Error />,
   },
   // Primary auction detail route for buyers

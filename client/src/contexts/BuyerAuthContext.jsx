@@ -7,7 +7,7 @@ const BuyerAuthContext = createContext();
 // API functions
 const checkBuyerAuth = async () => {
   try {
-    const response = await fetch('/buyer/profile', {
+    const response = await fetch('/api/buyer/profile', {
       method: 'GET',
       credentials: 'include',
     });
@@ -31,7 +31,7 @@ const checkBuyerAuth = async () => {
 };
 
 const buyerLogout = async () => {
-  const response = await fetch('/auth/logout', {
+  const response = await fetch('/api/buyer/logout', {
     method: 'POST',
     credentials: 'include',
   });
@@ -184,6 +184,19 @@ export const BuyerAuthProvider = ({ children }) => {
     refetch();
   };
 
+  // Update user function to update buyer data in context
+  const updateUser = (updatedBuyerData) => {
+    const newAuthState = {
+      isAuthenticated: true,
+      buyer: updatedBuyerData
+    };
+    
+    setBuyer(updatedBuyerData);
+    localStorage.setItem('buyerAuth', JSON.stringify(newAuthState));
+    queryClient.setQueryData(['buyerAuth'], { buyer: updatedBuyerData });
+    console.log('Buyer data updated:', updatedBuyerData.name || updatedBuyerData.firstName);
+  };
+
   const value = {
     isAuthenticated,
     buyer,
@@ -191,6 +204,7 @@ export const BuyerAuthProvider = ({ children }) => {
     login,
     logout,
     refreshAuth,
+    updateUser,
     isLoggingOut: logoutMutation.isPending,
     error
   };

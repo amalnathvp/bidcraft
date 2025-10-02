@@ -215,6 +215,60 @@ export const updateBuyerProfile = async (req, res) => {
     }
 };
 
+// Change Buyer Password
+export const changeBuyerPassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ 
+                message: "Current password and new password are required" 
+            });
+        }
+
+        if (newPassword.length < 6) {
+            return res.status(400).json({ 
+                message: "New password must be at least 6 characters long" 
+            });
+        }
+
+        const buyer = await User.findById(req.user.id);
+        
+        if (!buyer || buyer.role !== 'buyer') {
+            return res.status(404).json({ 
+                message: "Buyer not found" 
+            });
+        }
+
+        // Check current password
+        const isCurrentPasswordValid = await bcrypt.compare(currentPassword, buyer.password);
+        if (!isCurrentPasswordValid) {
+            return res.status(400).json({ 
+                message: "Current password is incorrect" 
+            });
+        }
+
+        // Hash new password
+        const saltRounds = 10;
+        const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+        // Update password
+        buyer.password = hashedNewPassword;
+        await buyer.save();
+
+        res.status(200).json({
+            message: "Password changed successfully"
+        });
+
+    } catch (error) {
+        console.error("Change buyer password error:", error);
+        res.status(500).json({ 
+            message: "Server error", 
+            error: error.message 
+        });
+    }
+};
+
 // Buyer Logout
 export const buyerLogout = async (req, res) => {
     try {

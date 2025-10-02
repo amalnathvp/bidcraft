@@ -163,7 +163,7 @@ export const PaymentGateway = () => {
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Processing Payment</h2>
           <p className="text-gray-600">Please don't close this window...</p>
           <div className="mt-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-            <p className="text-blue-800 text-sm">💳 Processing ${totalPrice}</p>
+            <p className="text-blue-800 text-sm">💳 Processing ₹{totalPrice}</p>
             <p className="text-blue-600 text-xs mt-1">Secure payment in progress</p>
           </div>
         </div>
@@ -195,7 +195,7 @@ export const PaymentGateway = () => {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-700">Amount Paid:</span>
-                  <span className="text-green-900 font-semibold">${totalPrice}</span>
+                  <span className="text-green-900 font-semibold">₹{totalPrice}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-green-700">Payment Method:</span>
@@ -391,7 +391,7 @@ export const PaymentGateway = () => {
                       You will be redirected to PayPal to complete your payment securely.
                     </p>
                     <p className="text-blue-600 text-sm">
-                      Amount: ${totalPrice}
+                      Amount: ₹{totalPrice}
                     </p>
                   </div>
                 )}
@@ -402,7 +402,7 @@ export const PaymentGateway = () => {
                     disabled={isProcessing}
                     className="w-full bg-green-600 text-white py-4 px-6 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors text-lg"
                   >
-                    {isProcessing ? 'Processing...' : `Pay $${totalPrice}`}
+                    {isProcessing ? 'Processing...' : `Pay ₹${totalPrice}`}
                   </button>
                 </div>
               </form>
@@ -436,7 +436,7 @@ export const PaymentGateway = () => {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Item Price</span>
-                    <span className="text-gray-900">${finalPrice}</span>
+                    <span className="text-gray-900">₹{finalPrice}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping</span>
@@ -444,12 +444,12 @@ export const PaymentGateway = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax (8%)</span>
-                    <span className="text-gray-900">${(finalPrice * 0.08).toFixed(2)}</span>
+                    <span className="text-gray-900">₹{(finalPrice * 0.08).toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-semibold text-lg">
                       <span className="text-gray-900">Total</span>
-                      <span className="text-gray-900">${totalPrice}</span>
+                      <span className="text-gray-900">₹{totalPrice}</span>
                     </div>
                   </div>
                 </div>

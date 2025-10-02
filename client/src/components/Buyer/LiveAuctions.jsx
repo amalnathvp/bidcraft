@@ -67,12 +67,12 @@ const AuctionCard = ({ auction, isSellerRoute = false }) => {
       
       <div className="flex justify-between items-center mt-4">
         <div>
-          <p className="text-2xl font-bold text-gray-900">${auction.currentPrice}</p>
+          <p className="text-2xl font-bold text-gray-900">₹{auction.currentPrice}</p>
           <p className="text-sm text-gray-500">
             {auction.bidCount || 0} bids
             {isSellerRoute && auction.bidCount > 0 && (
               <span className="ml-2 text-green-600 font-medium">
-                💰 +${(auction.currentPrice - auction.startingPrice) || 0}
+                💰 +₹{(auction.currentPrice - auction.startingPrice) || 0}
               </span>
             )}
           </p>

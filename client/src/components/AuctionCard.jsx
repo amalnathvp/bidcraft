@@ -40,7 +40,7 @@ export default function AuctionCard({ auction }) {
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-500">Current Price:</span>
             <span className="font-semibold text-lg text-green-600">
-              ${auction.currentPrice || auction.startingPrice}
+              ₹{auction.currentPrice || auction.startingPrice}
             </span>
           </div>
 

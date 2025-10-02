@@ -166,7 +166,7 @@ export const placeBid = async (req, res) => {
 
         product.bids.push({
             bidder: user,
-            bidAmount: bidAmount,
+            amount: bidAmount, // Changed from bidAmount to amount to match schema
         })
 
         product.currentPrice = bidAmount;
@@ -237,19 +237,35 @@ export const myAuction = async (req, res) => {
         await connectDB();
         const auction = await Product.find({ seller: req.user.id })
             .populate("seller", "name")
-            .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhotos seller")
+            .populate("bids.bidder", "name") // Also populate bidder info
             .sort({ createdAt: -1 });
-        const formatted = auction.map(auction => ({
-            _id: auction._id,
-            itemName: auction.itemName,
-            itemDescription: auction.itemDescription,
-            currentPrice: auction.currentPrice,
-            bidCount: auction.bids.length, // Changed from bidsCount to bidCount for consistency
-            timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
-            itemCategory: auction.itemCategory,
-            sellerName: auction.seller.name,
-            itemPhotos: auction.itemPhotos,
-        }));
+        
+        const formatted = auction.map(auction => {
+            // Use bidHistory if bids array is empty (seems to be where actual data is stored)
+            const actualBids = auction.bidHistory && auction.bidHistory.length > 0 ? auction.bidHistory : auction.bids;
+            
+            // Calculate total bid amount and average bid amount for this auction
+            const totalBidAmount = actualBids.reduce((sum, bid) => {
+                // Handle both 'amount' (correct schema) and 'bidAmount' (legacy) for backward compatibility
+                const bidValue = bid.amount || bid.bidAmount || 0;
+                return sum + bidValue;
+            }, 0);
+            const avgBidAmount = actualBids.length > 0 ? (totalBidAmount / actualBids.length) : 0;
+            
+            return {
+                _id: auction._id,
+                itemName: auction.itemName,
+                itemDescription: auction.itemDescription,
+                currentPrice: auction.currentPrice,
+                bidCount: actualBids.length, // Use actual bids count
+                totalBidAmount: totalBidAmount, // Total amount of all bids
+                avgBidAmount: avgBidAmount, // Average bid amount
+                timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
+                itemCategory: auction.itemCategory,
+                sellerName: auction.seller.name,
+                itemPhotos: auction.itemPhotos,
+            };
+        });
 
         res.status(200).json(formatted);
     } catch (error) {

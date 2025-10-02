@@ -388,11 +388,11 @@ export const BuyerSignup = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                 >
                   <option value="">Select price range</option>
-                  <option value="under-50">Under $50</option>
-                  <option value="50-100">$50 - $100</option>
-                  <option value="100-500">$100 - $500</option>
-                  <option value="500-1000">$500 - $1,000</option>
-                  <option value="over-1000">Over $1,000</option>
+                  <option value="under-50">Under ₹50</option>
+                  <option value="50-100">₹50 - ₹100</option>
+                  <option value="100-500">₹100 - ₹500</option>
+                  <option value="500-1000">₹500 - ₹1,000</option>
+                  <option value="over-1000">Over ₹1,000</option>
                 </select>
               </div>
 

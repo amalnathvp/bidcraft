@@ -118,7 +118,7 @@ export const SellerBids = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Total Bid Value</p>
-                  <p className="text-2xl font-bold text-gray-900">${statistics.totalBidValue.toLocaleString()}</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{statistics.totalBidValue.toLocaleString()}</p>
                 </div>
               </div>
             </div>
@@ -132,7 +132,7 @@ export const SellerBids = () => {
                 </div>
                 <div className="ml-4">
                   <p className="text-sm font-medium text-gray-600">Average Bid</p>
-                  <p className="text-2xl font-bold text-gray-900">${statistics.averageBidAmount}</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{statistics.averageBidAmount}</p>
                 </div>
               </div>
             </div>
@@ -265,7 +265,7 @@ export const SellerBids = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-lg font-bold text-green-600">
-                          ${bid.bidAmount.toLocaleString()}
+                          ₹{bid.bidAmount.toLocaleString()}
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

@@ -183,7 +183,7 @@ const OrderCard = ({ order, onViewDetails }) => {
             <div>
               <p className="text-xs text-gray-500">Total Amount</p>
               <p className="text-sm font-semibold text-green-600">
-                ${order.totalAmount.toFixed(2)}
+                ₹{order.totalAmount.toFixed(2)}
               </p>
             </div>
           </div>
@@ -299,11 +299,11 @@ const OrderDetailsModal = ({ order, isOpen, onClose }) => {
             <div className="bg-gray-50 rounded-lg p-4 space-y-2">
               <div className="flex justify-between">
                 <span className="text-gray-600">Item Price</span>
-                <span className="font-medium">${order.purchasePrice.toFixed(2)}</span>
+                <span className="font-medium">₹{order.purchasePrice.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Tax</span>
-                <span className="font-medium">${order.tax.toFixed(2)}</span>
+                <span className="font-medium">₹{order.tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Shipping</span>
@@ -312,7 +312,7 @@ const OrderDetailsModal = ({ order, isOpen, onClose }) => {
               <div className="border-t pt-2">
                 <div className="flex justify-between font-semibold text-lg">
                   <span>Total</span>
-                  <span>${order.totalAmount.toFixed(2)}</span>
+                  <span>₹{order.totalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>

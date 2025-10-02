@@ -214,13 +214,13 @@ export const ViewAuction = () => {
                 <div>
                   <p className="text-sm text-gray-500">Starting Price</p>
                   <p className="text-lg font-semibold text-gray-900">
-                    ${data.startingPrice}
+                    ₹{data.startingPrice}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Current Price</p>
                   <p className="text-2xl font-bold text-green-600">
-                    ${data.currentPrice}
+                    ₹{data.currentPrice}
                   </p>
                 </div>
               </div>
@@ -255,7 +255,7 @@ export const ViewAuction = () => {
                       htmlFor="bidAmount"
                       className="block text-sm font-medium text-gray-700 mb-1"
                     >
-                      Bid Amount (minimum: ${data.currentPrice + 1} maximum: $
+                      Bid Amount (minimum: ₹{data.currentPrice + 1} maximum: ₹
                       {data.currentPrice + 10})
                     </label>
                     <input
@@ -470,7 +470,7 @@ export const ViewAuction = () => {
                         </div>
                         <div>
                           <p className="text-lg font-semibold text-green-600">
-                            ${bid.bidAmount}
+                            ₹{bid.bidAmount}
                           </p>
                         </div>
                         <div>
@@ -497,7 +497,7 @@ export const ViewAuction = () => {
                         </div>
                         <div className="text-right">
                           <p className="text-lg font-semibold text-green-600">
-                            ${bid.bidAmount}
+                            ₹{bid.bidAmount}
                           </p>
                         </div>
                       </>

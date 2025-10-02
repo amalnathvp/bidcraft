@@ -37,7 +37,7 @@ export const Auction = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-sm text-gray-500">Current Bid</p>
-                  <p className="text-lg font-bold text-gray-900">$245.00</p>
+                  <p className="text-lg font-bold text-gray-900">₹245.00</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Bids</p>
@@ -72,7 +72,7 @@ export const Auction = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-sm text-gray-500">Current Bid</p>
-                  <p className="text-lg font-bold text-gray-900">$1,250.00</p>
+                  <p className="text-lg font-bold text-gray-900">₹1,250.00</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Bids</p>
@@ -107,7 +107,7 @@ export const Auction = () => {
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <p className="text-sm text-gray-500">Current Bid</p>
-                  <p className="text-lg font-bold text-gray-900">$890.00</p>
+                  <p className="text-lg font-bold text-gray-900">₹890.00</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Bids</p>

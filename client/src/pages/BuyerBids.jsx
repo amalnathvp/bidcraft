@@ -95,11 +95,11 @@ const BidCard = ({ bid, onDeleteBid, onViewAuction }) => {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div>
               <p className="text-xs text-gray-500">My Bid</p>
-              <p className="text-sm font-semibold text-blue-600">${bid.bidAmount}</p>
+              <p className="text-sm font-semibold text-blue-600">₹{bid.bidAmount}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Current Price</p>
-              <p className="text-sm font-medium text-gray-900">${bid.auction.currentPrice}</p>
+              <p className="text-sm font-medium text-gray-900">₹{bid.auction.currentPrice}</p>
             </div>
             <div>
               <p className="text-xs text-gray-500">Bid Date</p>
@@ -116,7 +116,7 @@ const BidCard = ({ bid, onDeleteBid, onViewAuction }) => {
           {/* Auction Progress */}
           <div className="bg-gray-50 rounded-md p-3 mb-4">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-xs text-gray-600">Starting Price: ${bid.auction.startingPrice}</span>
+              <span className="text-xs text-gray-600">Starting Price: ₹{bid.auction.startingPrice}</span>
               <span className="text-xs text-gray-600">Total Bids: {bid.auction.bidCount || 0}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
@@ -209,11 +209,11 @@ const BidDetailsModal = ({ auction, isOpen, onClose }) => {
               </div>
               <div>
                 <p className="text-sm text-gray-600">Starting Price</p>
-                <p className="font-medium">${auction.startingPrice}</p>
+                <p className="font-medium">₹{auction.startingPrice}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Current Price</p>
-                <p className="font-semibold text-green-600">${auction.currentPrice}</p>
+                <p className="font-semibold text-green-600">₹{auction.currentPrice}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600">Total Bids</p>

@@ -330,7 +330,7 @@ export const DeliveryAddress = () => {
                 <div className="border-t pt-4 space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Item Price</span>
-                    <span className="text-gray-900">${finalPrice}</span>
+                    <span className="text-gray-900">₹{finalPrice}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Shipping</span>
@@ -338,12 +338,12 @@ export const DeliveryAddress = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax</span>
-                    <span className="text-gray-900">${(finalPrice * 0.08).toFixed(2)}</span>
+                    <span className="text-gray-900">₹{(finalPrice * 0.08).toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-2">
                     <div className="flex justify-between font-semibold text-lg">
                       <span className="text-gray-900">Total</span>
-                      <span className="text-gray-900">${(finalPrice * 1.08).toFixed(2)}</span>
+                      <span className="text-gray-900">₹{(finalPrice * 1.08).toFixed(2)}</span>
                     </div>
                   </div>
                 </div>

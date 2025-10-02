@@ -7,6 +7,7 @@ import { MyAuction } from "../pages/MyAuction";
 import Profile from "../pages/Profile";
 import SellerProfile from "../pages/SellerProfile";
 import Privacy from "../pages/Privacy";
+import Dashboard from "../pages/Dashboard";
 import { AuctionDetail } from "../components/Buyer/AuctionDetail.jsx";
 import { LiveAuctions } from "../components/Buyer/LiveAuctions.jsx";
 import { SellerNotifications } from "../pages/SellerNotifications.jsx";
@@ -20,7 +21,7 @@ export const protectedRoutes = [
     children: [
       {
         index: true,
-        element: <AuctionList />,
+        element: <Dashboard />,
         errorElement: <Error />,
       },
       {

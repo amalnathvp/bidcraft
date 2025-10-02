@@ -232,7 +232,7 @@ export const CreateAuction = () => {
                     htmlFor="startingPrice"
                     className="block text-sm font-medium text-gray-700 mb-2"
                   >
-                    Starting Price ($) <span className="text-red-600">*</span>
+                    Starting Price (₹) <span className="text-red-600">*</span>
                   </label>
                   <input
                     type="number"

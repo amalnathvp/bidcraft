@@ -32,9 +32,9 @@ export default defineConfig({
       // Removed '/auction' proxy to allow React router to handle /auction/* routes
     },
     hmr: process.env.DISABLE_HMR === 'true' ? false : {
-      port: 5174, // Use different port for HMR to avoid conflicts
+      port: 5176, // Use different port for HMR to avoid conflicts
       host: '127.0.0.1',
-      clientPort: 5174,
+      clientPort: 5176,
       overlay: false,
       timeout: 30000, // Increase timeout
     },

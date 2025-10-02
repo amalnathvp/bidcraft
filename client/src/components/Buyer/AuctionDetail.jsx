@@ -255,7 +255,7 @@ export const AuctionDetail = () => {
     }
     
     if (amount <= currentPrice) {
-      setBidError(`Bid must be higher than current price of $${currentPrice}`);
+      setBidError(`Bid must be higher than current price of ₹${currentPrice}`);
       return;
     }
     
@@ -506,7 +506,7 @@ export const AuctionDetail = () => {
                             </div>
                             <div className="text-right">
                               <p className="text-lg font-bold text-green-600">
-                                ${bid.bidAmount.toLocaleString()}
+                                ₹{bid.bidAmount.toLocaleString()}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {new Date(bid.bidTime).toLocaleString('en-US', {
@@ -536,7 +536,7 @@ export const AuctionDetail = () => {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <p className="text-sm text-gray-600">Current Bid:</p>
-                  <p className="text-4xl font-bold text-gray-900">${auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice}</p>
+                  <p className="text-4xl font-bold text-gray-900">₹{auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-600">{auction.bids?.length || 0} bids</p>
@@ -783,7 +783,7 @@ export const AuctionDetail = () => {
                         className="bg-gray-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-900 flex items-center gap-2"
                       >
                         <span>🛒</span>
-                        Buy Now - ${(auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 100}
+                        Buy Now - ₹{(auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 100}
                       </button>
                     </div>
 
@@ -825,7 +825,7 @@ export const AuctionDetail = () => {
                         type="number"
                         value={bidAmount}
                         onChange={(e) => setBidAmount(e.target.value)}
-                        placeholder={`Minimum bid: $${(auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 1}`}
+                        placeholder={`Minimum bid: ₹${(auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 1}`}
                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                       {bidError && (
@@ -850,15 +850,15 @@ export const AuctionDetail = () => {
               <div className="grid grid-cols-2 gap-4 mt-6 pt-6 border-t border-gray-200">
                 <div>
                   <p className="text-sm text-gray-600">Starting Bid:</p>
-                  <p className="font-semibold">${auction.startingPrice}</p>
+                  <p className="font-semibold">₹{auction.startingPrice}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Reserve Price:</p>
-                  <p className="font-semibold">${auction.startingPrice + 100}</p>
+                  <p className="font-semibold">₹{auction.startingPrice + 100}</p>
                 </div>
                 <div className="col-span-2">
                   <p className="text-sm text-gray-600">Shipping:</p>
-                  <p className="font-semibold">$15 (3-5 business days)</p>
+                  <p className="font-semibold">₹15 (3-5 business days)</p>
                 </div>
               </div>
             </div>
@@ -1214,7 +1214,7 @@ export const AuctionDetail = () => {
                           className="w-full h-32 object-cover rounded mb-2"
                         />
                         <h3 className="font-semibold text-sm mb-1 line-clamp-2">{item.itemName}</h3>
-                        <p className="text-blue-600 font-bold">${item.currentPrice || item.startingPrice}</p>
+                        <p className="text-blue-600 font-bold">₹{item.currentPrice || item.startingPrice}</p>
                         <p className="text-xs text-gray-500 mb-2">
                           {new Date(item.itemEndDate) > new Date() ? 
                             `Ends: ${new Date(item.itemEndDate).toLocaleDateString()}` :

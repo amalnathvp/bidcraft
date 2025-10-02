@@ -216,7 +216,7 @@ export const SavedItems = () => {
                     </h3>
                     
                     <div className="text-lg font-bold text-green-600 mb-2">
-                      ${item.currentPrice > 0 ? item.currentPrice : item.startingPrice}
+                      ₹{item.currentPrice > 0 ? item.currentPrice : item.startingPrice}
                       {item.bidCount > 0 && (
                         <span className="text-sm text-gray-600 font-normal ml-2">
                           ({item.bidCount} bids)
