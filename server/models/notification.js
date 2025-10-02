@@ -8,7 +8,17 @@ const notificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['bid_placed', 'auction_won', 'auction_ended', 'new_bid', 'contact_message'],
+        enum: [
+            'bid_placed',           // User placed a bid
+            'outbid',              // User was outbid by someone else
+            'auction_won',         // User won an auction
+            'auction_lost',        // User lost an auction
+            'saved_item_bid',      // Someone bid on user's saved item
+            'auction_ending_soon', // Auction ending in 24 hours for items user bid on
+            'auction_ended',       // Auction has ended
+            'new_bid',            // New bid on auction
+            'contact_message'     // Contact message received
+        ],
         required: true,
     },
     title: {

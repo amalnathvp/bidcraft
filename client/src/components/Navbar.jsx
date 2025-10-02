@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router";
 import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
+import { useQuery } from "@tanstack/react-query";
 import {
   MdOutlineCreate,
   MdOutlineDashboard,
@@ -12,6 +13,7 @@ import {
   MdOutlinePrivacyTip,
   MdAdminPanelSettings,
   MdGavel,
+  MdNotifications,
 } from "react-icons/md";
 import {
   IoCloseSharp,
@@ -20,10 +22,48 @@ import {
 } from "react-icons/io5";
 import { RiAuctionLine } from "react-icons/ri";
 
+// API function to get notification count
+const getNotificationCount = async () => {
+  const response = await fetch('/notifications/unread-count', {
+    method: 'GET',
+    credentials: 'include',
+  });
+  
+  if (!response.ok) {
+    throw new Error('Failed to fetch notification count');
+  }
+  
+  const data = await response.json();
+  return data;
+};
+
 export const Navbar = () => {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showNotificationPopup, setShowNotificationPopup] = useState(false);
   const { seller, isAuthenticated, logout } = useSellerAuth();
+
+  // Fetch notification count
+  const { data: notificationData } = useQuery({
+    queryKey: ['sellerNotificationCount'],
+    queryFn: getNotificationCount,
+    enabled: isAuthenticated,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
+  const unreadCount = notificationData?.unreadCount || 0;
+
+  // Show popup when new notifications arrive
+  useEffect(() => {
+    if (unreadCount > 0) {
+      setShowNotificationPopup(true);
+      const timer = setTimeout(() => {
+        setShowNotificationPopup(false);
+      }, 5000); // Hide popup after 5 seconds
+      
+      return () => clearTimeout(timer);
+    }
+  }, [unreadCount]);
 
   // User logout
   const handleLogout = () => {
@@ -63,7 +103,7 @@ export const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-6">
               <nav className="flex items-center space-x-6">
-                {(isAuthenticated ? getNavLinks(seller?.role) : navMenu).map((item) => (
+                {(isAuthenticated ? getNavLinks(seller?.role).filter(item => item.name !== 'Notifications') : navMenu).map((item) => (
                   <NavLink
                     to={item.link}
                     key={item.link}
@@ -77,6 +117,18 @@ export const Navbar = () => {
                   </NavLink>
                 ))}
               </nav>
+              
+              {/* Notification Icon */}
+              {isAuthenticated && (
+                <Link to="/seller/notifications" className="relative p-2 text-gray-600 hover:text-gray-800">
+                  <MdNotifications className="h-6 w-6" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+              )}
               
               {/* User Profile Dropdown */}
               {isAuthenticated && (
@@ -114,6 +166,34 @@ export const Navbar = () => {
           </div>
         </div>
       </header>
+
+      {/* Notification Popup */}
+      {showNotificationPopup && unreadCount > 0 && (
+        <div className="fixed top-20 right-4 bg-white border border-gray-200 rounded-lg shadow-lg p-4 z-50 max-w-sm">
+          <div className="flex items-center space-x-3">
+            <MdNotifications className="h-6 w-6 text-indigo-600" />
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {unreadCount === 1 ? 'New notification!' : `${unreadCount} new notifications!`}
+              </p>
+              <p className="text-xs text-gray-500">Click to view all notifications</p>
+            </div>
+            <button
+              onClick={() => setShowNotificationPopup(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          </div>
+          <Link
+            to="/seller/notifications"
+            className="block mt-2 text-xs text-indigo-600 hover:text-indigo-800"
+            onClick={() => setShowNotificationPopup(false)}
+          >
+            View all notifications →
+          </Link>
+        </div>
+      )}
 
       {/* Mobile Menu Drawer */}
       <div
@@ -322,11 +402,11 @@ const protectedNavLink = [
     link: "/seller/notifications",
     icon: <MdMailOutline className="mr-3 h-5 w-5" />,
   },
-  // {
-  //   name: "Profile",
-  //   link: "/seller/profile",
-  //   icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
-  // },
+  {
+    name: "Profile",
+    link: "/seller/profile",
+    icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
+  },
   {
     name: "Contact",
     link: "/contact",

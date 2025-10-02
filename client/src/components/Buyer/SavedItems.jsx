@@ -5,31 +5,6 @@ import { BuyerNavbar } from './BuyerNavbar';
 import { useBuyerAuth } from '../../contexts/BuyerAuthContext';
 import LoadingScreen from '../LoadingScreen';
 
-// Helper function to format time remaining
-const formatTimeRemaining = (endDate) => {
-  const now = new Date();
-  const end = new Date(endDate);
-  const timeLeft = end - now;
-  
-  if (timeLeft <= 0) {
-    return { text: 'Auction ended', isEnded: true };
-  }
-  
-  const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-  
-  if (days > 0) {
-    return { text: `${days}d ${hours}h left`, isEnded: false };
-  } else if (hours > 0) {
-    return { text: `${hours}h ${minutes}m left`, isEnded: false };
-  } else if (minutes > 0) {
-    return { text: `${minutes}m left`, isEnded: false };
-  } else {
-    return { text: 'Less than 1m left', isEnded: false };
-  }
-};
-
 // API functions
 const getWatchlist = async () => {
   const response = await fetch('/api/buyer/auction/watchlist', {
@@ -196,8 +171,10 @@ export const SavedItems = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredWatchlist.map((item) => {
-              const timeInfo = formatTimeRemaining(item.itemEndDate);
-              const isEnded = timeInfo.isEnded;
+              const isEnded = new Date(item.itemEndDate) <= new Date();
+              const timeLeft = new Date(item.itemEndDate) - new Date();
+              const daysLeft = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+              const hoursLeft = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
               return (
                 <div key={item._id} className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -213,7 +190,7 @@ export const SavedItems = () => {
                         Ended
                       </div>
                     )}
-                    {!isEnded && timeInfo.text.includes('m left') && !timeInfo.text.includes('h') && (
+                    {!isEnded && daysLeft <= 1 && (
                       <div className="absolute top-2 right-2 bg-orange-600 text-white px-2 py-1 rounded text-sm font-medium">
                         Ending Soon
                       </div>
@@ -247,9 +224,15 @@ export const SavedItems = () => {
                       )}
                     </div>
 
-                    <div className={`text-sm mb-3 ${isEnded ? 'text-red-600' : 'text-gray-600'}`}>
-                      {timeInfo.text}
-                    </div>
+                    {!isEnded ? (
+                      <div className="text-sm text-gray-600 mb-3">
+                        {daysLeft > 0 ? `${daysLeft}d ${hoursLeft}h left` : `${hoursLeft}h left`}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-red-600 mb-3">
+                        Auction ended
+                      </div>
+                    )}
 
                     <Link
                       to={`/auction/${item._id}`}

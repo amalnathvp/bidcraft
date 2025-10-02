@@ -53,6 +53,7 @@ const bidSchema = new mongoose.Schema({
 bidSchema.index({ sellerId: 1, bidTime: -1 });
 bidSchema.index({ auctionId: 1, bidAmount: -1 });
 bidSchema.index({ buyerId: 1, bidTime: -1 });
+bidSchema.index({ buyerId: 1, status: 1, bidTime: -1 }); // Compound index for filtered queries
 
 const Bid = mongoose.model('Bid', bidSchema);
 export default Bid;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router';
 
 // Simple time formatting function
 const formatTimeAgo = (dateString) => {
@@ -80,7 +81,7 @@ const deleteNotification = async (notificationId) => {
   return response.json();
 };
 
-const NotificationCard = ({ notification, onMarkAsRead, onDelete }) => {
+const NotificationCard = ({ notification, onMarkAsRead, onDelete, onNotificationClick }) => {
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'new_bid':
@@ -94,20 +95,23 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete }) => {
     }
   };
 
-  const handleMarkAsRead = () => {
+  const handleCardClick = () => {
+    // Mark as read if not already read
     if (!notification.isRead) {
       onMarkAsRead(notification._id);
     }
+    // Call the notification click handler for navigation
+    onNotificationClick(notification);
   };
 
   return (
     <div 
-      className={`p-4 border rounded-lg transition-colors cursor-pointer ${
+      className={`p-4 border rounded-lg transition-colors cursor-pointer hover:shadow-md ${
         notification.isRead 
           ? 'bg-white border-gray-200' 
           : 'bg-blue-50 border-blue-200'
       }`}
-      onClick={handleMarkAsRead}
+      onClick={handleCardClick}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-3 flex-1">
@@ -158,6 +162,7 @@ const NotificationCard = ({ notification, onMarkAsRead, onDelete }) => {
 export const SellerNotifications = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['notifications', currentPage],
@@ -196,6 +201,19 @@ export const SellerNotifications = () => {
 
   const handleDelete = (notificationId) => {
     deleteMutation.mutate(notificationId);
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Navigate to the relevant auction detail page if auction exists
+    if (notification.auction && notification.auction._id) {
+      navigate(`/seller/auction-detail/${notification.auction._id}`);
+    } else if (notification.metadata && notification.metadata.auctionId) {
+      // Fallback to metadata auctionId if direct auction reference is missing
+      navigate(`/seller/auction-detail/${notification.metadata.auctionId}`);
+    } else {
+      // If no auction reference, navigate to general auction list
+      navigate('/seller/myauction');
+    }
   };
 
   if (isLoading) {
@@ -261,6 +279,7 @@ export const SellerNotifications = () => {
               notification={notification}
               onMarkAsRead={handleMarkAsRead}
               onDelete={handleDelete}
+              onNotificationClick={handleNotificationClick}
             />
           ))}
         </div>

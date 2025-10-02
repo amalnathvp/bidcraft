@@ -2,6 +2,7 @@ import Product from "../models/product.js";
 import User from "../models/user.js";
 import Bid from "../models/bid.js";
 import { createNotification } from "./notification.controller.js";
+import NotificationService from "../services/notificationService.js";
 
 // View auction details (public - no auth required)
 export const viewAuction = async (req, res) => {
@@ -82,6 +83,10 @@ export const placeBid = async (req, res) => {
             return res.status(400).json({ message: "Sellers cannot bid on their own auctions" });
         }
 
+        // Check if there was a previous highest bidder (to notify them of being outbid)
+        const previousHighestBidderId = auction.highestBidder;
+        const previousHighestBid = auction.currentPrice;
+
         // Update auction with new bid
         auction.currentPrice = bidAmount;
         auction.highestBidder = buyerId;
@@ -140,7 +145,47 @@ export const placeBid = async (req, res) => {
                 bidAmount: bidAmount
             });
         } catch (notificationError) {
-            console.error('Failed to create notification:', notificationError);
+            console.error('Failed to create seller notification:', notificationError);
+        }
+
+        // Create buyer notifications using NotificationService
+        try {
+            // 1. Create bid placed notification for the current bidder
+            await NotificationService.createBidPlacedNotification({
+                bidderId: buyerId,
+                auctionId: auction._id,
+                bidAmount: bidAmount,
+                itemName: auction.itemName
+            });
+
+            // 2. Create outbid notification for previous highest bidder (if exists)
+            if (previousHighestBidderId && previousHighestBidderId.toString() !== buyerId) {
+                await NotificationService.createOutbidNotification({
+                    outbidBuyerId: previousHighestBidderId,
+                    auctionId: auction._id,
+                    newBidAmount: bidAmount,
+                    itemName: auction.itemName,
+                    previousBidAmount: previousHighestBid
+                });
+            }
+
+            // 3. Create saved item bid notifications for users who have this item saved
+            const usersWithItemSaved = await User.find({
+                watchlist: auction._id,
+                _id: { $ne: buyerId } // Exclude the current bidder
+            });
+
+            for (const user of usersWithItemSaved) {
+                await NotificationService.createSavedItemBidNotification({
+                    userId: user._id,
+                    auctionId: auction._id,
+                    bidAmount: bidAmount,
+                    itemName: auction.itemName
+                });
+            }
+
+        } catch (buyerNotificationError) {
+            console.error('Failed to create buyer notifications:', buyerNotificationError);
             // Don't fail the bid if notification creation fails
         }
 

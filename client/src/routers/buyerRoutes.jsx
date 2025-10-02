@@ -5,6 +5,11 @@ import { AuctionDetail } from "../components/Buyer/AuctionDetail";
 import { BuyerLogin } from "../components/Buyer/BuyerLogin";
 import { BuyerSignup } from "../components/Buyer/BuyerSignup";
 import { SavedItems } from "../components/Buyer/SavedItems";
+import BuyerNotifications from "../pages/BuyerNotifications";
+import { DeliveryAddress } from "../pages/DeliveryAddress";
+import { PaymentGateway } from "../pages/PaymentGateway";
+import { BuyerOrders } from "../pages/BuyerOrders";
+import { BuyerBids } from "../pages/BuyerBids";
 
 export const buyerRoutes = [
   {
@@ -20,6 +25,21 @@ export const buyerRoutes = [
   {
     path: "/saved",
     element: <SavedItems />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/buyer/orders",
+    element: <BuyerOrders />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/buyer/bids",
+    element: <BuyerBids />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/buyer/notifications",
+    element: <BuyerNotifications />,
     errorElement: <Error />,
   },
   // Primary auction detail route for buyers
@@ -53,6 +73,17 @@ export const buyerRoutes = [
   {
     path: "/buyer/signup",
     element: <BuyerSignup />,
+    errorElement: <Error />,
+  },
+  // Buy Now Process Routes
+  {
+    path: "/auction/:id/delivery",
+    element: <DeliveryAddress />,
+    errorElement: <Error />,
+  },
+  {
+    path: "/auction/:id/payment",
+    element: <PaymentGateway />,
     errorElement: <Error />,
   },
 ];

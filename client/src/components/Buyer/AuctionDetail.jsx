@@ -762,7 +762,26 @@ export const AuctionDetail = () => {
                         <span>⚡</span>
                         {bidMutation.isPending ? "Placing Bid..." : "Place Bid"}
                       </button>
-                      <button className="bg-gray-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-900 flex items-center gap-2">
+                      <button 
+                        onClick={() => {
+                          if (!isAuthenticated) {
+                            navigate('/buyer/login');
+                            return;
+                          }
+                          
+                          if (!auction || !auction._id) {
+                            console.error('No auction data available');
+                            return;
+                          }
+                          
+                          // Navigate to delivery address page with buy now price
+                          const buyNowPrice = (auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 100;
+                          navigate(`/auction/${auction._id}/delivery`, {
+                            state: { buyNowPrice }
+                          });
+                        }}
+                        className="bg-gray-800 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-900 flex items-center gap-2"
+                      >
                         <span>🛒</span>
                         Buy Now - ${(auction.currentPrice > 0 ? auction.currentPrice : auction.startingPrice) + 100}
                       </button>

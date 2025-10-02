@@ -2,7 +2,6 @@ import { useState } from "react";
 import AuctionCard from "../components/AuctionCard";
 import { useQuery } from "@tanstack/react-query";
 import { getAuctions, getMyAuctions } from "../api/auction";
-import { getBidStatistics } from "../api/bid";
 import { useLocation, Link } from "react-router";
 import { useSellerAuth } from "../contexts/SellerAuthContext.jsx";
 import LoadingScreen from "../components/LoadingScreen";
@@ -19,29 +18,6 @@ export const AuctionList = () => {
     queryFn: isSellerView ? getMyAuctions : getAuctions,
     enabled: isSellerView ? isAuthenticated : true,
     staleTime: 30 * 1000,
-  });
-
-  // Fetch seller profile data for dashboard stats (seller view only)
-  const { data: profileData } = useQuery({
-    queryKey: ['sellerProfile'],
-    queryFn: async () => {
-      const response = await fetch('/user/profile', {
-        method: 'GET',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch profile');
-      return response.json();
-    },
-    enabled: isSellerView && isAuthenticated,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
-
-  // Fetch bid statistics (seller view only)
-  const { data: bidStats } = useQuery({
-    queryKey: ['bidStatistics'],
-    queryFn: getBidStatistics,
-    enabled: isSellerView && isAuthenticated,
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   if (isLoading) return <LoadingScreen />;
@@ -61,7 +37,7 @@ export const AuctionList = () => {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            {isSellerView ? 'Seller Dashboard' : 'All Auctions'}
+            {isSellerView ? 'Your Auctions' : 'All Auctions'}
           </h1>
           <p className="text-gray-600">
             {isSellerView 
@@ -70,168 +46,6 @@ export const AuctionList = () => {
             }
           </p>
         </div>
-
-        {/* Dashboard Stats (Seller View Only) */}
-        {isSellerView && (
-          <div className="mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-              {/* Total Auctions */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <span className="text-blue-600 font-semibold">📋</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Auctions</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {profileData?.user?.stats?.totalAuctions || data?.length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Active Auctions */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <span className="text-green-600 font-semibold">🟢</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Active Auctions</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {profileData?.user?.stats?.activeAuctions || 
-                       data?.filter(auction => new Date(auction.itemEndDate) > new Date()).length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Bids */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                      <span className="text-purple-600 font-semibold">🎯</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Bids</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {bidStats?.totalBids || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Total Bid Value */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <span className="text-orange-600 font-semibold">💰</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Bid Value</p>
-                    <p className="text-2xl font-bold text-orange-600">
-                      ${bidStats?.totalBidValue?.toLocaleString() || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              {/* Completed Auctions */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
-                      <span className="text-indigo-600 font-semibold">✅</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Completed Auctions</p>
-                    <p className="text-2xl font-bold text-indigo-600">
-                      {profileData?.user?.stats?.completedAuctions || 
-                       data?.filter(auction => new Date(auction.itemEndDate) <= new Date()).length || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Average Bid */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-teal-100 rounded-lg flex items-center justify-center">
-                      <span className="text-teal-600 font-semibold">📊</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Average Bid</p>
-                    <p className="text-2xl font-bold text-teal-600">
-                      ${bidStats?.averageBidAmount?.toFixed(2) || '0.00'}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Unique Bidders */}
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
-                      <span className="text-pink-600 font-semibold">👥</span>
-                    </div>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Unique Bidders</p>
-                    <p className="text-2xl font-bold text-pink-600">
-                      {bidStats?.uniqueBidders || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Actions */}
-            <div className="bg-white rounded-lg shadow-sm p-6 mb-8">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-              <div className="flex flex-wrap gap-4">
-                <Link 
-                  to="/seller/create" 
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Create New Auction
-                </Link>
-                <Link 
-                  to="/seller/bids" 
-                  className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
-                >
-                  View All Bids
-                </Link>
-                <Link 
-                  to="/seller/profile" 
-                  className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
-                >
-                  Edit Profile
-                </Link>
-                <Link 
-                  to="/seller/notifications" 
-                  className="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors"
-                >
-                  View Notifications
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Filters */}
         <div className="mb-8">
