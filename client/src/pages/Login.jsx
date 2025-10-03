@@ -91,9 +91,25 @@ const Login = () => {
       console.log('Login response received:', response);
       
       if (response.user) {
-        // Update the seller auth context with user data from login response
-        login(response.user);
-        navigate("/seller");
+        // Check user role and redirect accordingly
+        const userRole = response.user.role;
+        console.log('User role detected:', userRole);
+        
+        // For non-admin users, update the seller auth context
+        if (userRole !== 'admin') {
+          login(response.user);
+        }
+        
+        // Redirect based on role immediately, don't wait for context updates
+        if (userRole === 'admin') {
+          console.log('Admin user detected, redirecting to admin dashboard');
+          navigate("/admin");
+        } else if (userRole === 'buyer') {
+          navigate("/buyer");
+        } else {
+          // Default to seller dashboard for 'seller' or 'user' roles
+          navigate("/seller");
+        }
       } else {
         // If no user data in response, try to fetch it separately
         console.log('No user data in login response, fetching separately...');
@@ -106,8 +122,23 @@ const Login = () => {
           if (userResponse.ok) {
             const userData = await userResponse.json();
             if (userData.user) {
-              login(userData.user);
-              navigate("/seller");
+              const userRole = userData.user.role;
+              console.log('User role from fetch:', userRole);
+              
+              // For non-admin users, update the seller auth context
+              if (userRole !== 'admin') {
+                login(userData.user);
+              }
+              
+              // Redirect based on role
+              if (userRole === 'admin') {
+                console.log('Admin user detected from fetch, redirecting to admin dashboard');
+                navigate("/admin");
+              } else if (userRole === 'buyer') {
+                navigate("/buyer");
+              } else {
+                navigate("/seller");
+              }
             } else {
               throw new Error('No user data available');
             }
@@ -130,10 +161,24 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate("/seller");
+    if (isAuthenticated && seller) {
+      // Only redirect non-admin users based on seller auth context
+      const userRole = seller.role;
+      console.log('Already authenticated, user role:', userRole);
+      
+      // Skip redirect for admin users as they should use direct admin login
+      if (userRole === 'admin') {
+        console.log('Admin user detected in useEffect, skipping seller redirect');
+        return;
+      }
+      
+      if (userRole === 'buyer') {
+        navigate("/buyer");
+      } else {
+        navigate("/seller");
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, seller, navigate]);
 
   if (isLoading) return <LoadingScreen />;
 

@@ -66,43 +66,8 @@ export const AdminDashboard = () => {
         {/* Statistics Cards */}
         {dashboardData && dashboardData.stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                    Active Auctions
-                  </h3>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">
-                    {dashboardData.stats.activeAuctions || 0}
-                  </p>
-                </div>
-                <div className="bg-green-100 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                    Total Auctions
-                  </h3>
-                  <p className="text-2xl font-bold text-gray-900 mt-2">
-                    {dashboardData.stats.totalAuctions || 0}
-                  </p>
-                </div>
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
+            {/* Total Users */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
@@ -110,6 +75,9 @@ export const AdminDashboard = () => {
                   </h3>
                   <p className="text-2xl font-bold text-gray-900 mt-2">
                     {dashboardData.stats.totalUsers || 0}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    +{dashboardData.stats.recentUsers || 0} this week
                   </p>
                 </div>
                 <div className="bg-purple-100 p-3 rounded-full">
@@ -120,25 +88,195 @@ export const AdminDashboard = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-sm shadow-sm border border-gray-200 p-6">
+            {/* Total Sellers */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                    Recent Signups
+                    Total Sellers
                   </h3>
                   <p className="text-2xl font-bold text-gray-900 mt-2">
-                    {dashboardData.stats.recentUsers || 0}
+                    {dashboardData.stats.totalSellers || 0}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    +{dashboardData.stats.recentSellers || 0} this week
+                  </p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 11v6h8v-6M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Buyers */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    Total Buyers
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {dashboardData.stats.totalBuyers || 0}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    +{dashboardData.stats.recentBuyers || 0} this week
+                  </p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l-2.5 5m12.5-5a2 2 0 100 4 2 2 0 000-4z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Active Auctions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    Active Auctions
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {dashboardData.stats.activeAuctions || 0}
+                  </p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    {dashboardData.stats.auctionsToday || 0} created today
                   </p>
                 </div>
                 <div className="bg-orange-100 p-3 rounded-full">
                   <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                   </svg>
                 </div>
               </div>
             </div>
           </div>
         )}
+
+        {/* Secondary Statistics Row */}
+        {dashboardData && dashboardData.stats && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Total Auctions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    Total Auctions
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {dashboardData.stats.totalAuctions || 0}
+                  </p>
+                </div>
+                <div className="bg-indigo-100 p-3 rounded-full">
+                  <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Ended Auctions */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    Ended Auctions
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {dashboardData.stats.endedAuctions || 0}
+                  </p>
+                </div>
+                <div className="bg-gray-100 p-3 rounded-full">
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Success Rate */}
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">
+                    Success Rate
+                  </h3>
+                  <p className="text-2xl font-bold text-gray-900 mt-2">
+                    {dashboardData.stats.successRate || 0}%
+                  </p>
+                </div>
+                <div className="bg-emerald-100 p-3 rounded-full">
+                  <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Link
+            to="/admin/sellers"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+          >
+            <div className="flex items-center">
+              <div className="bg-green-100 p-3 rounded-full group-hover:bg-green-200 transition-colors">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M8 11v6h8v-6M8 11H6a2 2 0 00-2 2v6a2 2 0 002 2h12a2 2 0 002-2v-6a2 2 0 00-2-2h-2" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-green-600 transition-colors">
+                  Manage Sellers
+                </h3>
+                <p className="text-sm text-gray-600">View and manage all sellers</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/buyers"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+          >
+            <div className="flex items-center">
+              <div className="bg-blue-100 p-3 rounded-full group-hover:bg-blue-200 transition-colors">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l-2.5 5m12.5-5a2 2 0 100 4 2 2 0 000-4z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+                  Manage Buyers
+                </h3>
+                <p className="text-sm text-gray-600">View and manage all buyers</p>
+              </div>
+            </div>
+          </Link>
+
+          <Link
+            to="/admin/users"
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow group"
+          >
+            <div className="flex items-center">
+              <div className="bg-purple-100 p-3 rounded-full group-hover:bg-purple-200 transition-colors">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+              </div>
+              <div className="ml-4">
+                <h3 className="text-lg font-medium text-gray-900 group-hover:text-purple-600 transition-colors">
+                  All Users
+                </h3>
+                <p className="text-sm text-gray-600">Comprehensive user management</p>
+              </div>
+            </div>
+          </Link>
+        </div>
 
         {/* Recent Active Auctions */}
         {dashboardData && (

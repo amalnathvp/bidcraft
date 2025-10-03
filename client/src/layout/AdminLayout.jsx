@@ -1,14 +1,21 @@
 import { Outlet } from "react-router";
-import {Navbar} from "../components/Navbar"
-import {Footer} from "../components/Footer"
-
+import { AdminNavbar } from "../components/AdminNavbar";
+import { Footer } from "../components/Footer";
+import { AdminAuthProvider } from "../context/AdminAuthContext";
+import AdminAuthGuard from "../components/AdminAuthGuard";
 
 export const AdminLayout = () => {
   return (
-    <>
-      <Navbar />
-      <Outlet />
-      <Footer/>
-    </>
+    <AdminAuthProvider>
+      <AdminAuthGuard>
+        <div className="min-h-screen flex flex-col">
+          <AdminNavbar />
+          <main className="flex-1">
+            <Outlet />
+          </main>
+          <Footer />
+        </div>
+      </AdminAuthGuard>
+    </AdminAuthProvider>
   );
 };

@@ -1,6 +1,19 @@
 import axios from "axios";
 const VITE_API = import.meta.env.VITE_API;
 
+// Verify admin authentication
+export const verifyAdmin = async () => {
+    try {
+        const res = await axios.get(`${VITE_API}/admin/verify`,
+            { withCredentials: true }
+        );
+        return res.data;
+    } catch (error) {
+        console.log(error?.response?.data?.error || "Admin verification failed");
+        throw error;
+    }
+};
+
 // Get admin dashboard statistics
 export const getAdminDashboard = async () => {
     try {
@@ -24,6 +37,34 @@ export const getAllUsers = async (page = 1, search = '', role = 'all', limit = 1
         return res.data;
     } catch (error) {
         console.log(error?.response?.data?.error || "Can't load users");
+        throw error;
+    }
+};
+
+// Get all sellers with pagination and filtering
+export const getAllSellers = async (page = 1, search = '', limit = 10, sortBy = 'createdAt', sortOrder = 'desc') => {
+    try {
+        const res = await axios.get(`${VITE_API}/admin/sellers`, {
+            params: { page, search, limit, sortBy, sortOrder },
+            withCredentials: true
+        });
+        return res.data;
+    } catch (error) {
+        console.log(error?.response?.data?.error || "Can't load sellers");
+        throw error;
+    }
+};
+
+// Get all buyers with pagination and filtering
+export const getAllBuyers = async (page = 1, search = '', limit = 10, sortBy = 'createdAt', sortOrder = 'desc') => {
+    try {
+        const res = await axios.get(`${VITE_API}/admin/buyers`, {
+            params: { page, search, limit, sortBy, sortOrder },
+            withCredentials: true
+        });
+        return res.data;
+    } catch (error) {
+        console.log(error?.response?.data?.error || "Can't load buyers");
         throw error;
     }
 };
