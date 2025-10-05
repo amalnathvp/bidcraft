@@ -3,96 +3,24 @@ import { useQuery } from '@tanstack/react-query';
 import { useBuyerAuth } from '../contexts/BuyerAuthContext.jsx';
 import LoadingScreen from '../components/LoadingScreen.jsx';
 import { useNavigate } from 'react-router';
-
-// Mock data for orders (since we don't have a backend yet)
-const mockOrders = [
-  {
-    id: 'ORD001',
-    auctionId: '68dcea0acc82430fa285a972',
-    itemName: 'Vintage Camera Collection',
-    itemImage: 'https://picsum.photos/400/300?random=1',
-    itemCategory: 'Electronics',
-    purchasePrice: 650.00,
-    tax: 52.00,
-    totalAmount: 702.00,
-    orderDate: '2024-12-02T10:30:00Z',
-    deliveryStatus: 'delivered',
-    deliveryAddress: {
-      fullName: 'John Doe',
-      addressLine1: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10001'
-    },
-    seller: {
-      name: 'Tech Trader',
-      email: 'seller@example.com'
-    },
-    estimatedDelivery: '2024-12-05T00:00:00Z',
-    actualDelivery: '2024-12-04T14:20:00Z',
-    trackingNumber: 'TRK123456789'
-  },
-  {
-    id: 'ORD002',
-    auctionId: '68dd45b3958c1d976c97f30f',
-    itemName: 'Antique Pocket Watch',
-    itemImage: 'https://picsum.photos/400/300?random=2',
-    itemCategory: 'Collectibles',
-    purchasePrice: 450.00,
-    tax: 36.00,
-    totalAmount: 486.00,
-    orderDate: '2024-12-01T15:45:00Z',
-    deliveryStatus: 'in_transit',
-    deliveryAddress: {
-      fullName: 'John Doe',
-      addressLine1: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10001'
-    },
-    seller: {
-      name: 'Antique Collector',
-      email: 'antiques@example.com'
-    },
-    estimatedDelivery: '2024-12-06T00:00:00Z',
-    trackingNumber: 'TRK987654321'
-  },
-  {
-    id: 'ORD003',
-    auctionId: '68e1234567890abcdef12345',
-    itemName: 'Designer Handbag',
-    itemImage: 'https://picsum.photos/400/300?random=3',
-    itemCategory: 'Fashion',
-    purchasePrice: 320.00,
-    tax: 25.60,
-    totalAmount: 345.60,
-    orderDate: '2024-11-30T09:15:00Z',
-    deliveryStatus: 'processing',
-    deliveryAddress: {
-      fullName: 'John Doe',
-      addressLine1: '123 Main Street',
-      city: 'New York',
-      state: 'NY',
-      postalCode: '10001'
-    },
-    seller: {
-      name: 'Fashion House',
-      email: 'fashion@example.com'
-    },
-    estimatedDelivery: '2024-12-08T00:00:00Z',
-    trackingNumber: null
-  }
-];
+import { BuyerNavbar } from '../components/Buyer/BuyerNavbar.jsx';
 
 // API function to get user orders
 const getOrders = async () => {
-  const response = await fetch('/orders/buyer', {
+  const VITE_API = import.meta.env.VITE_API || 'http://localhost:3000';
+  
+  const response = await fetch(`${VITE_API}/orders/buyer`, {
     method: 'GET',
     credentials: 'include',
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
   
   if (!response.ok) {
-    throw new Error('Failed to fetch orders');
+    const errorText = await response.text();
+    console.error('Orders API failed:', response.status, errorText);
+    throw new Error(`Failed to fetch orders: ${response.status}`);
   }
   
   const data = await response.json();
@@ -375,6 +303,14 @@ export const BuyerOrders = () => {
     queryKey: ['buyerOrders'],
     queryFn: getOrders,
     enabled: isAuthenticated,
+    retry: (failureCount, error) => {
+      // Retry on server errors, but not on auth errors
+      if (error.message.includes('401') || error.message.includes('403')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    refetchOnWindowFocus: false
   });
 
   // Redirect if not authenticated
@@ -388,21 +324,68 @@ export const BuyerOrders = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700">Error Loading Orders</h2>
-          <p className="text-gray-500">{error.message}</p>
+      <div className="min-h-screen bg-gray-50">
+        <BuyerNavbar />
+        <div className="flex items-center justify-center py-16">
+          <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">Error Loading Orders</h2>
+            <p className="text-gray-500 mb-4">
+              {error.message.includes('401') || error.message.includes('403') 
+                ? 'Please log in to view your orders.'
+                : 'We\'re having trouble loading your orders right now.'}
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={() => window.location.reload()}
+                className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Try Again
+              </button>
+              {(error.message.includes('401') || error.message.includes('403')) && (
+                <button
+                  onClick={() => navigate('/buyer/login')}
+                  className="w-full bg-gray-200 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-300 transition-colors"
+                >
+                  Go to Login
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
+  // Handle the API response structure
   const orders = data?.orders || [];
+  
+  // Transform API data to match UI expectations if needed
+  const transformedOrders = orders.map(order => ({
+    id: order.orderId || order._id,
+    auctionId: order.auction?._id || order.auction,
+    itemName: order.itemDetails?.itemName || order.auction?.itemName || 'Unknown Item',
+    itemImage: order.itemDetails?.itemPhotos?.[0] || order.itemDetails?.itemPhoto || order.auction?.itemPhotos?.[0] || order.auction?.itemPhoto,
+    itemCategory: order.itemDetails?.itemCategory || order.auction?.itemCategory || 'Unknown Category',
+    purchasePrice: order.pricing?.purchasePrice || 0,
+    tax: order.pricing?.tax || 0,
+    totalAmount: order.pricing?.totalAmount || order.pricing?.purchasePrice || 0,
+    orderDate: order.orderDate || order.createdAt,
+    deliveryStatus: order.deliveryStatus || order.orderStatus || 'processing',
+    deliveryAddress: order.deliveryAddress || {},
+    seller: {
+      name: order.seller?.name || 'Unknown Seller',
+      email: order.seller?.email || ''
+    },
+    estimatedDelivery: order.tracking?.estimatedDelivery,
+    actualDelivery: order.tracking?.actualDelivery,
+    trackingNumber: order.tracking?.trackingNumber
+  }));
   
   // Filter orders based on status
   const filteredOrders = filterStatus === 'all' 
-    ? orders 
-    : orders.filter(order => order.deliveryStatus === filterStatus);
+    ? transformedOrders 
+    : transformedOrders.filter(order => order.deliveryStatus === filterStatus);
 
   const handleViewDetails = (order) => {
     setSelectedOrder(order);
@@ -410,15 +393,20 @@ export const BuyerOrders = () => {
   };
 
   const orderCounts = {
-    all: orders.length,
-    processing: orders.filter(o => o.deliveryStatus === 'processing').length,
-    in_transit: orders.filter(o => o.deliveryStatus === 'in_transit').length,
-    delivered: orders.filter(o => o.deliveryStatus === 'delivered').length,
+    all: transformedOrders.length,
+    processing: transformedOrders.filter(o => o.deliveryStatus === 'processing').length,
+    in_transit: transformedOrders.filter(o => o.deliveryStatus === 'in_transit').length,
+    delivered: transformedOrders.filter(o => o.deliveryStatus === 'delivered').length,
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-gray-50">
+      {/* Sticky Buyer Navbar */}
+      <div className="sticky top-0 z-50">
+        <BuyerNavbar />
+      </div>
+      
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Orders</h1>

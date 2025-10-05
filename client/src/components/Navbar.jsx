@@ -96,7 +96,7 @@ export const Navbar = () => {
             <Link to="/seller" className="flex items-center space-x-2">
               <RiAuctionLine className="h-6 w-6 text-gray-700 " />
               <span className="text-xl font-bold text-gray-900 ">
-                BidCraft
+                BidCraft Seller
               </span>
             </Link>
 

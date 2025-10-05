@@ -7,7 +7,8 @@ const BuyerAuthContext = createContext();
 // API functions
 const checkBuyerAuth = async () => {
   try {
-    const response = await fetch('/api/buyer/profile', {
+    const VITE_API = import.meta.env.VITE_API || 'http://localhost:3000';
+    const response = await fetch(`${VITE_API}/buyer/profile`, {
       method: 'GET',
       credentials: 'include',
     });
@@ -31,7 +32,8 @@ const checkBuyerAuth = async () => {
 };
 
 const buyerLogout = async () => {
-  const response = await fetch('/api/buyer/logout', {
+  const VITE_API = import.meta.env.VITE_API || 'http://localhost:3000';
+  const response = await fetch(`${VITE_API}/buyer/logout`, {
     method: 'POST',
     credentials: 'include',
   });

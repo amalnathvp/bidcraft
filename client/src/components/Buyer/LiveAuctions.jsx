@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useLocation } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { getBuyerAuctions } from "../../api/buyerAuction.js";
@@ -29,6 +29,192 @@ const formatTimeLeft = (endDate) => {
   if (days > 0) return `${days}d ${hours}h left`;
   if (hours > 0) return `${hours}h ${minutes}m left`;
   return `${minutes}m left`;
+};
+
+// Search Bar Component with Recommendations
+const SearchBar = ({ onSearch, auctions, isSellerRoute }) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showRecommendations, setShowRecommendations] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const searchRef = useRef(null);
+
+  // Handicraft categories for recommendations
+  const categories = [
+    "all",
+    "Pottery & Ceramics",
+    "Woodcraft & Carving",
+    "Textiles & Weaving",
+    "Metalwork & Jewelry",
+    "Glass Art & Stained Glass",
+    "Leather Craft",
+    "Paper Craft & Origami",
+    "Traditional Paintings",
+    "Embroidery & Needlework",
+    "Other Handicrafts"
+  ];
+
+  // Get search recommendations based on current auctions
+  const getRecommendations = useMemo(() => {
+    if (!auctions || searchTerm.length < 1) return [];
+    
+    const suggestions = new Set();
+    
+    auctions.forEach(auction => {
+      // Add item names that match search
+      if (auction.itemName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.add(auction.itemName);
+      }
+      
+      // Add categories that match
+      if (auction.itemCategory?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.add(auction.itemCategory);
+      }
+      
+      // Add seller names for buyer routes
+      if (!isSellerRoute && auction.sellerName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.add(`by ${auction.sellerName}`);
+      }
+    });
+    
+    // Add matching categories from our predefined list
+    categories.forEach(category => {
+      if (category !== "all" && category.toLowerCase().includes(searchTerm.toLowerCase())) {
+        suggestions.add(category);
+      }
+    });
+    
+    return Array.from(suggestions).slice(0, 5);
+  }, [searchTerm, auctions, isSellerRoute]);
+
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchTerm(value);
+    setShowRecommendations(value.length > 0);
+    onSearch(value, selectedCategory);
+  };
+
+  // Handle category change
+  const handleCategoryChange = (category) => {
+    setSelectedCategory(category);
+    onSearch(searchTerm, category);
+  };
+
+  // Handle recommendation click
+  const handleRecommendationClick = (recommendation) => {
+    setSearchTerm(recommendation);
+    setShowRecommendations(false);
+    onSearch(recommendation, selectedCategory);
+  };
+
+  // Handle click outside to close recommendations
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowRecommendations(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="mb-8">
+      <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+        {/* Search Input */}
+        <div className="relative" ref={searchRef}>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder={isSellerRoute ? "Search your auctions..." : "Search auctions by name, category, or seller..."}
+              value={searchTerm}
+              onChange={handleSearchChange}
+              onFocus={() => setShowRecommendations(searchTerm.length > 0)}
+              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Search Recommendations Dropdown */}
+          {showRecommendations && getRecommendations.length > 0 && (
+            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+              <div className="py-2">
+                <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Suggestions
+                </div>
+                {getRecommendations.map((recommendation, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleRecommendationClick(recommendation)}
+                    className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <svg className="h-4 w-4 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                      <span className="text-gray-700">{recommendation}</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Category Filter */}
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Filter by Category:</label>
+          <div className="flex flex-wrap gap-2">
+            {categories.slice(0, 6).map((category) => (
+              <button
+                key={category}
+                onClick={() => handleCategoryChange(category)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  selectedCategory === category
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {category === "all" ? "All Categories" : category}
+              </button>
+            ))}
+            {categories.length > 6 && (
+              <select
+                value={selectedCategory}
+                onChange={(e) => handleCategoryChange(e.target.value)}
+                className="px-3 py-1 text-sm border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">More categories...</option>
+                {categories.slice(6).map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
+
+        {/* Search Results Info */}
+        {searchTerm && (
+          <div className="mt-3 text-sm text-gray-600">
+            <span className="inline-flex items-center">
+              <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Searching for: "<strong>{searchTerm}</strong>"
+              {selectedCategory !== "all" && ` in ${selectedCategory}`}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 const AuctionCard = ({ auction, isSellerRoute = false }) => {
@@ -95,6 +281,10 @@ export const LiveAuctions = () => {
   const { isAuthenticated: isSellerAuthenticated } = useSellerAuth();
   const isSellerRoute = location.pathname.includes('/seller/');
   
+  // Search and filter state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  
   // For seller routes, fetch their auctions; for buyer routes, fetch all auctions
   const { data: allAuctions, isLoading, error } = useQuery({
     queryKey: isSellerRoute ? ["myLiveAuctions"] : ["liveAuctions"],
@@ -115,7 +305,7 @@ export const LiveAuctions = () => {
   }, [isSellerRoute, isSellerAuthenticated, isLoading, error, allAuctions]);
 
   // Filter for only active auctions
-  const auctions = React.useMemo(() => {
+  const baseAuctions = React.useMemo(() => {
     if (!allAuctions) return [];
     
     // For debugging, let's see all auctions first
@@ -175,6 +365,47 @@ export const LiveAuctions = () => {
     return resultAuctions;
   }, [allAuctions, isSellerRoute]);
 
+  // Apply search and category filters
+  const filteredAuctions = useMemo(() => {
+    if (!baseAuctions) return [];
+    
+    let filtered = baseAuctions;
+    
+    // Apply search filter
+    if (searchTerm.trim()) {
+      const searchLower = searchTerm.toLowerCase();
+      filtered = filtered.filter(auction => {
+        return (
+          auction.itemName?.toLowerCase().includes(searchLower) ||
+          auction.itemDescription?.toLowerCase().includes(searchLower) ||
+          auction.itemCategory?.toLowerCase().includes(searchLower) ||
+          (!isSellerRoute && auction.sellerName?.toLowerCase().includes(searchLower))
+        );
+      });
+    }
+    
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(auction => 
+        auction.itemCategory === selectedCategory
+      );
+    }
+    
+    return filtered;
+  }, [baseAuctions, searchTerm, selectedCategory, isSellerRoute]);
+
+  // Handle search function
+  const handleSearch = (term, category) => {
+    setSearchTerm(term);
+    setSelectedCategory(category);
+  };
+
+  // Clear search
+  const clearSearch = () => {
+    setSearchTerm("");
+    setSelectedCategory("all");
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {!isSellerRoute && <BuyerNavbar />}
@@ -184,8 +415,8 @@ export const LiveAuctions = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
             {isSellerRoute ? 'Your Auctions' : 'Live Auctions'}
-            {isSellerRoute && auctions && (
-              <span className="text-lg font-normal text-gray-500 ml-2">({auctions.length} total)</span>
+            {isSellerRoute && baseAuctions && (
+              <span className="text-lg font-normal text-gray-500 ml-2">({baseAuctions.length} total)</span>
             )}
           </h1>
           <p className="text-gray-600">
@@ -194,14 +425,47 @@ export const LiveAuctions = () => {
               : 'Don\'t miss out on these exceptional pieces'
             }
           </p>
-          {isSellerRoute && auctions && auctions.length > 0 && (
+          {isSellerRoute && baseAuctions && baseAuctions.length > 0 && (
             <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
               <p className="text-blue-800 text-sm">
-                📊 <strong>Quick Stats:</strong> {auctions.reduce((total, auction) => total + (auction.bidCount || 0), 0)} total bids across all active auctions
+                📊 <strong>Quick Stats:</strong> {baseAuctions.reduce((total, auction) => total + (auction.bidCount || 0), 0)} total bids across all active auctions
               </p>
             </div>
           )}
         </div>
+
+        {/* Search Bar */}
+        {!isLoading && baseAuctions && baseAuctions.length > 0 && (
+          <SearchBar 
+            onSearch={handleSearch} 
+            auctions={baseAuctions} 
+            isSellerRoute={isSellerRoute}
+          />
+        )}
+
+        {/* Search Results Summary */}
+        {(searchTerm || selectedCategory !== "all") && !isLoading && (
+          <div className="mb-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-yellow-800 font-medium">
+                  {filteredAuctions.length} auction{filteredAuctions.length !== 1 ? 's' : ''} found
+                  {searchTerm && ` for "${searchTerm}"`}
+                  {selectedCategory !== "all" && ` in ${selectedCategory}`}
+                </p>
+              </div>
+              <button
+                onClick={clearSearch}
+                className="text-yellow-600 hover:text-yellow-800 text-sm font-medium flex items-center"
+              >
+                <svg className="h-4 w-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Clear filters
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Loading State */}
         {isLoading && (
@@ -236,7 +500,7 @@ export const LiveAuctions = () => {
         )}
 
         {/* Auctions Grid */}
-        {auctions && auctions.length > 0 && (
+        {filteredAuctions && filteredAuctions.length > 0 && (
           <>
             {isSellerRoute && (
               <div className="mb-6 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -247,15 +511,32 @@ export const LiveAuctions = () => {
               </div>
             )}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {auctions.map((auction) => (
+              {filteredAuctions.map((auction) => (
                 <AuctionCard key={auction._id} auction={auction} isSellerRoute={isSellerRoute} />
               ))}
             </div>
           </>
         )}
 
-        {/* Empty State */}
-        {auctions && auctions.length === 0 && (
+        {/* Empty State - No Search Results */}
+        {(searchTerm || selectedCategory !== "all") && filteredAuctions && filteredAuctions.length === 0 && !isLoading && (
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">🔍</div>
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No Results Found</h3>
+            <p className="text-gray-600 mb-6">
+              No auctions match your search criteria. Try adjusting your search terms or category filter.
+            </p>
+            <button
+              onClick={clearSearch}
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
+
+        {/* Empty State - No Auctions */}
+        {baseAuctions && baseAuctions.length === 0 && !searchTerm && selectedCategory === "all" && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">{isSellerRoute ? '📦' : '🏺'}</div>
             <h3 className="text-xl font-semibold text-gray-900 mb-2">

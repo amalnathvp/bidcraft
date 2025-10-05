@@ -124,7 +124,7 @@ export const PaymentGateway = () => {
           }
         };
 
-        const response = await fetch('/orders', {
+        const response = await fetch(`${import.meta.env.VITE_API}/orders`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -136,11 +136,21 @@ export const PaymentGateway = () => {
         if (response.ok) {
           const result = await response.json();
           console.log('Order created successfully:', result);
+          setStep('success');
         } else {
-          console.error('Failed to create order');
+          const errorData = await response.json();
+          console.error('Failed to create order:', errorData);
+          alert(`Failed to create order: ${errorData.message || 'Unknown error'}`);
+          setStep('payment');
+          setIsProcessing(false);
+          return;
         }
       } catch (error) {
         console.error('Error creating order:', error);
+        alert(`Error creating order: ${error.message}`);
+        setStep('payment');
+        setIsProcessing(false);
+        return;
       }
       
       setStep('success');

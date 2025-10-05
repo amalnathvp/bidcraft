@@ -14,7 +14,7 @@ const orderSchema = new mongoose.Schema({
   },
   auction: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Auction',
+    ref: 'Product',
     required: true
   },
   seller: {

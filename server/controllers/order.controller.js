@@ -1,6 +1,6 @@
 import Order from '../models/order.js';
 import User from '../models/user.js';
-import Auction from '../models/product.js';
+import Product from '../models/product.js';
 
 // Create a new order (called after successful payment)
 export const createOrder = async (req, res) => {
@@ -15,7 +15,7 @@ export const createOrder = async (req, res) => {
     const buyerId = req.user.id;
 
     // Get auction details
-    const auction = await Auction.findById(auctionId).populate('seller');
+    const auction = await Product.findById(auctionId).populate('seller');
     if (!auction) {
       return res.status(404).json({ 
         success: false, 
