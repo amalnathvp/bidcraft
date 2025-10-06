@@ -64,6 +64,14 @@ export const AdminNavbar = () => {
                         >
                             Buyers
                         </Link>
+                        <Link
+                            to="/admin/auctions"
+                            className={`text-white hover:text-blue-300 transition-colors px-3 py-2 rounded-md text-sm font-medium ${
+                                isActive('/admin/auctions') ? 'bg-blue-600' : ''
+                            }`}
+                        >
+                            Auction Approvals
+                        </Link>
                     </div>
 
                     {/* Admin Profile & Logout */}
@@ -123,6 +131,14 @@ export const AdminNavbar = () => {
                             }`}
                         >
                             Buyers
+                        </Link>
+                        <Link
+                            to="/admin/auctions"
+                            className={`text-white hover:text-blue-300 transition-colors px-3 py-2 rounded-md text-sm font-medium ${
+                                isActive('/admin/auctions') ? 'bg-blue-600' : ''
+                            }`}
+                        >
+                            Auction Approvals
                         </Link>
                     </div>
                 </div>

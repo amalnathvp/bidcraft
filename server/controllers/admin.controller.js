@@ -409,3 +409,234 @@ export const getAllBuyers = async (req, res) => {
         });
     }
 };
+
+// Get all pending auctions for approval
+export const getPendingAuctions = async (req, res) => {
+    try {
+        await connectDB();
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const skip = (page - 1) * limit;
+        
+        const totalPending = await Product.countDocuments({ approvalStatus: 'pending' });
+        
+        const pendingAuctions = await Product.find({ approvalStatus: 'pending' })
+            .populate('seller', 'name email')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        
+        const totalPages = Math.ceil(totalPending / limit);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                auctions: pendingAuctions,
+                pagination: {
+                    currentPage: page,
+                    totalPages,
+                    totalPending,
+                    limit,
+                    hasNextPage: page < totalPages,
+                    hasPrevPage: page > 1
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching pending auctions:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error fetching pending auctions', 
+            error: error.message 
+        });
+    }
+};
+
+// Approve an auction
+export const approveAuction = async (req, res) => {
+    try {
+        await connectDB();
+        
+        const { auctionId } = req.params;
+        const { adminNotes } = req.body;
+        const adminId = req.user.id;
+        
+        const auction = await Product.findByIdAndUpdate(
+            auctionId,
+            {
+                approvalStatus: 'approved',
+                approvedBy: adminId,
+                approvalDate: new Date(),
+                adminNotes: adminNotes || null
+            },
+            { new: true }
+        ).populate('seller', 'name email');
+        
+        if (!auction) {
+            return res.status(404).json({
+                success: false,
+                message: 'Auction not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Auction approved successfully',
+            data: auction
+        });
+    } catch (error) {
+        console.error('Error approving auction:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error approving auction', 
+            error: error.message 
+        });
+    }
+};
+
+// Reject an auction
+export const rejectAuction = async (req, res) => {
+    try {
+        await connectDB();
+        
+        const { auctionId } = req.params;
+        const { rejectionReason, adminNotes } = req.body;
+        const adminId = req.user.id;
+        
+        if (!rejectionReason) {
+            return res.status(400).json({
+                success: false,
+                message: 'Rejection reason is required'
+            });
+        }
+        
+        const auction = await Product.findByIdAndUpdate(
+            auctionId,
+            {
+                approvalStatus: 'rejected',
+                approvedBy: adminId,
+                approvalDate: new Date(),
+                rejectionReason,
+                adminNotes: adminNotes || null
+            },
+            { new: true }
+        ).populate('seller', 'name email');
+        
+        if (!auction) {
+            return res.status(404).json({
+                success: false,
+                message: 'Auction not found'
+            });
+        }
+        
+        res.status(200).json({
+            success: true,
+            message: 'Auction rejected successfully',
+            data: auction
+        });
+    } catch (error) {
+        console.error('Error rejecting auction:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error rejecting auction', 
+            error: error.message 
+        });
+    }
+};
+
+// Get all auctions with their approval status
+export const getAllAuctions = async (req, res) => {
+    try {
+        await connectDB();
+        
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
+        const status = req.query.status || 'all'; // all, pending, approved, rejected
+        const skip = (page - 1) * limit;
+        
+        const searchQuery = status === 'all' ? {} : { approvalStatus: status };
+        
+        const totalAuctions = await Product.countDocuments(searchQuery);
+        
+        const auctions = await Product.find(searchQuery)
+            .populate('seller', 'name email')
+            .populate('approvedBy', 'name')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+        
+        const totalPages = Math.ceil(totalAuctions / limit);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                auctions,
+                pagination: {
+                    currentPage: page,
+                    totalPages,
+                    totalAuctions,
+                    limit,
+                    hasNextPage: page < totalPages,
+                    hasPrevPage: page > 1
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching auctions:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Error fetching auctions', 
+            error: error.message 
+        });
+    }
+};
+
+// Migrate existing auctions to approved status
+export const migrateExistingAuctions = async (req, res) => {
+    try {
+        await connectDB();
+        console.log('🔄 Starting migration: Setting existing auctions as approved...');
+        
+        // Find all auctions that don't have an approvalStatus set (or are pending)
+        const result = await Product.updateMany(
+            {
+                $or: [
+                    { approvalStatus: { $exists: false } },
+                    { approvalStatus: 'pending' }
+                ]
+            },
+            {
+                $set: {
+                    approvalStatus: 'approved',
+                    approvalDate: new Date(),
+                    adminNotes: 'Auto-approved: Existing auction before approval system implementation'
+                }
+            }
+        );
+        
+        console.log(`✅ Migration completed successfully!`);
+        console.log(`📊 Updated ${result.modifiedCount} auctions to approved status`);
+        
+        // Get count of approved auctions
+        const approvedCount = await Product.countDocuments({ approvalStatus: 'approved' });
+        console.log(`📈 Total approved auctions: ${approvedCount}`);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Migration completed successfully',
+            data: {
+                modifiedCount: result.modifiedCount,
+                totalApproved: approvedCount
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Migration failed:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Migration failed',
+            error: error.message
+        });
+    }
+};

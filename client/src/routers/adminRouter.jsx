@@ -3,6 +3,7 @@ import { AdminDashboard } from "../pages/Admin/AdminDashboard";
 import { UsersList } from "../pages/Admin/UsersList";
 import { SellersList } from "../pages/Admin/SellersList";
 import { BuyersList } from "../pages/Admin/BuyersList";
+import AuctionApprovals from "../pages/Admin/AuctionApprovals";
 
 export const adminRouter = [
   {
@@ -24,6 +25,10 @@ export const adminRouter = [
       {
         path: "buyers",
         element: <BuyersList />,
+      },
+      {
+        path: "auctions",
+        element: <AuctionApprovals />,
       },
     ],
   },

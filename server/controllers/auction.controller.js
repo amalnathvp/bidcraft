@@ -92,7 +92,10 @@ export const createAuction = async (req, res) => {
 export const showAuction = async (req, res) => {
     try {
         await connectDB();
-        const auction = await Product.find({ itemEndDate: { $gt: new Date() } })
+        const auction = await Product.find({ 
+            itemEndDate: { $gt: new Date() },
+            approvalStatus: 'approved'  // Only show approved auctions
+        })
             .populate("seller", "name")
             .select("itemName itemDescription currentPrice bids itemEndDate itemCategory itemPhotos seller")
             .sort({ createdAt: -1 });
@@ -264,6 +267,11 @@ export const myAuction = async (req, res) => {
                 itemCategory: auction.itemCategory,
                 sellerName: auction.seller.name,
                 itemPhotos: auction.itemPhotos,
+                // Add approval status fields
+                approvalStatus: auction.approvalStatus,
+                rejectionReason: auction.rejectionReason,
+                adminNotes: auction.adminNotes,
+                approvalDate: auction.approvalDate
             };
         });
 

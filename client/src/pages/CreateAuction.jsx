@@ -37,7 +37,10 @@ export const CreateAuction = () => {
       queryClient.invalidateQueries({ queryKey: ["myauctions"] });
       queryClient.invalidateQueries({ queryKey: ["stats"] });
 
-      navigate(`/auction/${data.newAuction._id}`);
+      // Show success message about approval process
+      alert("🎉 Auction created successfully!\n\n📋 Your auction has been submitted for admin approval. Once approved by our team, it will be visible to buyers.\n\n✅ You can check the approval status in 'My Auctions' page.");
+      
+      navigate(`/seller/myauction`);
     },
     onError: (error) => {
       console.error("Auction creation failed:", error);
@@ -164,6 +167,30 @@ export const CreateAuction = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Auction</h1>
+          <p className="text-gray-600">Fill in the details below to create your auction.</p>
+        </div>
+
+        {/* Approval Notice */}
+        <div className="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-start">
+            <div className="text-blue-600 mr-3 mt-0.5">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-blue-800 mb-1">Approval Required</h3>
+              <p className="text-sm text-blue-700">
+                All new auctions require admin approval before being visible to buyers. 
+                You'll be notified about the approval status, and you can check it in your "My Auctions" page.
+              </p>
+            </div>
+          </div>
+        </div>
+
         <div className="bg-white rounded-md shadow-md border border-gray-200">
           <div className="p-6 md:p-8">
             <form onSubmit={handleSubmit} className="space-y-6">

@@ -19,6 +19,12 @@ export const viewAuction = async (req, res) => {
                 return res.status(404).json({ message: "Auction not found" });
             }
             
+            // For buyer routes, only show approved auctions
+            // For individual auction view from buyer perspective, check approval status
+            if (auction.approvalStatus !== 'approved') {
+                return res.status(404).json({ message: "Auction not found or not available" });
+            }
+            
             // Transform bids to include bidder info directly for easier frontend access
             const transformedAuction = auction.toObject();
             if (transformedAuction.bids && transformedAuction.bids.length > 0) {
@@ -34,9 +40,10 @@ export const viewAuction = async (req, res) => {
             
             res.status(200).json({ auction: transformedAuction });
         } else {
-            // Get all active auctions with basic seller info
+            // Get all active auctions with basic seller info (only approved auctions for buyers)
             const auctions = await Product.find({
-                itemEndDate: { $gt: new Date() } // Only active auctions
+                itemEndDate: { $gt: new Date() }, // Only active auctions
+                approvalStatus: 'approved' // Only approved auctions
             }).populate('seller', 'name email businessName city state verified').sort({ createdAt: -1 });
             
             res.status(200).json({ auctions });

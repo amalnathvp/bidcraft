@@ -63,6 +63,29 @@ const productSchema = new mongoose.Schema({
     isSold: {
         type: Boolean,
         default: false,
+    },
+    // Approval system fields
+    approvalStatus: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    },
+    approvedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User',
+        default: null
+    },
+    approvalDate: {
+        type: Date,
+        default: null
+    },
+    rejectionReason: {
+        type: String,
+        default: null
+    },
+    adminNotes: {
+        type: String,
+        default: null
     }
 }, { timestamps: true });
 
