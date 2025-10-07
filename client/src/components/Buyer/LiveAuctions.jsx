@@ -247,9 +247,9 @@ const AuctionCard = ({ auction, isSellerRoute = false }) => {
     
     <div className="p-4">
       <h3 className="text-xl font-bold text-gray-900 mb-2">{auction.itemName}</h3>
-      {!isSellerRoute && (
-        <p className="text-gray-600 text-sm mb-1">by {auction.sellerName}</p>
-      )}
+      <p className="text-gray-600 text-sm mb-1">
+        by {auction.sellerName || auction.seller?.name || 'Unknown Seller'}
+      </p>
       
       <div className="flex justify-between items-center mt-4">
         <div>
@@ -288,8 +288,8 @@ export const LiveAuctions = () => {
   // For seller routes, fetch their auctions; for buyer routes, fetch all auctions
   const { data: allAuctions, isLoading, error } = useQuery({
     queryKey: isSellerRoute ? ["myLiveAuctions"] : ["liveAuctions"],
-    queryFn: isSellerRoute ? getMyAuctions : getBuyerAuctions,
-    enabled: isSellerRoute ? isSellerAuthenticated : true,
+    queryFn: isSellerRoute && isSellerAuthenticated ? getMyAuctions : getBuyerAuctions,
+    enabled: true, // Always enabled, API will handle permissions
   });
 
   // Add debug logging
@@ -302,6 +302,15 @@ export const LiveAuctions = () => {
       allAuctions,
       auctionsCount: allAuctions?.length || 0
     });
+    
+    // Debug first auction's seller data
+    if (allAuctions && allAuctions.length > 0) {
+      console.log('First auction seller data:', {
+        sellerName: allAuctions[0].sellerName,
+        seller: allAuctions[0].seller,
+        fullAuction: allAuctions[0]
+      });
+    }
   }, [isSellerRoute, isSellerAuthenticated, isLoading, error, allAuctions]);
 
   // Filter for only active auctions

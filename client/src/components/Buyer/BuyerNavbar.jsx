@@ -130,8 +130,8 @@ export const BuyerNavbar = () => {
             {!isAuthenticated && (
               <Link to="/login" className="text-gray-700 hover:text-orange-600">Sell</Link>
             )}
-            <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
-            <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link>
+            {/* <Link to="/about" className="text-gray-700 hover:text-orange-600">About</Link>
+            <Link to="/contact" className="text-gray-700 hover:text-orange-600">Contact</Link> */}
           </nav>
 
           <div className="flex items-center space-x-4">

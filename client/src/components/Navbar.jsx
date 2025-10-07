@@ -354,11 +354,11 @@ const navMenu = [
     link: "/about",
     icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
   },
-  {
-    name: "Contact",
-    link: "/contact",
-    icon: <MdMailOutline className="mr-3 h-5 w-5" />,
-  },
+  // {
+  //   name: "Contact",
+  //   link: "/contact",
+  //   icon: <MdMailOutline className="mr-3 h-5 w-5" />,
+  // },
   {
     name: "Legal",
     link: "/legal",
@@ -407,11 +407,11 @@ const protectedNavLink = [
     link: "/seller/profile",
     icon: <MdOutlineAccountCircle className="mr-3 h-5 w-5" />,
   },
-  {
-    name: "Contact",
-    link: "/contact",
-    icon: <MdMailOutline className="mr-3 h-5 w-5" />,
-  },
+  // {
+  //   name: "Contact",
+  //   link: "/contact",
+  //   icon: <MdMailOutline className="mr-3 h-5 w-5" />,
+  // },
   {
     name: "Privacy",
     link: "/seller/privacy",

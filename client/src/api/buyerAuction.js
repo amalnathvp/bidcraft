@@ -2,17 +2,26 @@
 
 // Get all active auctions (public)
 export const getBuyerAuctions = async () => {
-  const response = await fetch('/api/buyer/auction/all', {
-    method: 'GET',
-    credentials: 'include',
-  });
-  
-  if (!response.ok) {
-    throw new Error('Failed to fetch auctions');
+  try {
+    const response = await fetch('http://localhost:3000/buyer/auction/all', {
+      method: 'GET',
+      credentials: 'include',
+    });
+    
+    if (!response.ok) {
+      console.error('API Error:', response.status, response.statusText);
+      throw new Error(`Failed to fetch auctions: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Buyer auctions API response:', data);
+    
+    // Transform data to match expected format
+    return data.auctions || data;
+  } catch (error) {
+    console.error('getBuyerAuctions error:', error);
+    throw error;
   }
-  
-  const data = await response.json();
-  return data.auctions;
 };
 
 // Get specific auction details (public)

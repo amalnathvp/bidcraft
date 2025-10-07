@@ -104,7 +104,7 @@ export const showAuction = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidCount: auction.bids.length,
+            bidCount: auction.bidCount || auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -173,6 +173,7 @@ export const placeBid = async (req, res) => {
         })
 
         product.currentPrice = bidAmount;
+        product.bidCount = product.bids.length; // Update bidCount field
         await product.save();
         res.status(200).json({ message: "Bid placed successfully" });
     } catch (error) {
@@ -208,7 +209,7 @@ export const dashboardData = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidCount: auction.bids.length,
+            bidCount: auction.bidCount || auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -221,7 +222,7 @@ export const dashboardData = async (req, res) => {
             itemName: auction.itemName,
             itemDescription: auction.itemDescription,
             currentPrice: auction.currentPrice,
-            bidCount: auction.bids.length,
+            bidCount: auction.bidCount || auction.bids.length,
             timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
             itemCategory: auction.itemCategory,
             sellerName: auction.seller.name,
@@ -244,10 +245,14 @@ export const myAuction = async (req, res) => {
             .sort({ createdAt: -1 });
         
         const formatted = auction.map(auction => {
-            // Use bidHistory if bids array is empty (seems to be where actual data is stored)
-            const actualBids = auction.bidHistory && auction.bidHistory.length > 0 ? auction.bidHistory : auction.bids;
+            // Get the correct bid count - use database field if available, otherwise calculate
+            let bidCount = auction.bidCount || 0;
+            if (bidCount === 0 && auction.bids) {
+                bidCount = auction.bids.length;
+            }
             
             // Calculate total bid amount and average bid amount for this auction
+            const actualBids = auction.bids || [];
             const totalBidAmount = actualBids.reduce((sum, bid) => {
                 // Handle both 'amount' (correct schema) and 'bidAmount' (legacy) for backward compatibility
                 const bidValue = bid.amount || bid.bidAmount || 0;
@@ -260,7 +265,7 @@ export const myAuction = async (req, res) => {
                 itemName: auction.itemName,
                 itemDescription: auction.itemDescription,
                 currentPrice: auction.currentPrice,
-                bidCount: actualBids.length, // Use actual bids count
+                bidCount: bidCount, // Use calculated/database bid count
                 totalBidAmount: totalBidAmount, // Total amount of all bids
                 avgBidAmount: avgBidAmount, // Average bid amount
                 timeLeft: Math.max(0, new Date(auction.itemEndDate) - new Date()),
